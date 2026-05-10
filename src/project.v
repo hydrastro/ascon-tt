@@ -1,4 +1,20 @@
 `timescale 1ns/1ps
+// TT profile defaults.
+// Normal builds use the production Tiny Tapeout profile.
+// Debug simulations compile with -DTT_DEBUG_DEFAULTS.
+`ifndef TT_ASCON_PROFILE_DEFAULTS_VH
+`define TT_ASCON_PROFILE_DEFAULTS_VH
+`ifdef TT_DEBUG_DEFAULTS
+`define TT_ASCON_DEF_ENABLE_PERM_DEBUG 1
+`define TT_ASCON_DEF_ENABLE_DIAGNOSTICS 1
+`define TT_ASCON_DEF_ENABLE_OUT_BUFFER 1
+`else
+`define TT_ASCON_DEF_ENABLE_PERM_DEBUG 0
+`define TT_ASCON_DEF_ENABLE_DIAGNOSTICS 0
+`define TT_ASCON_DEF_ENABLE_OUT_BUFFER 0
+`endif
+`endif
+
 `default_nettype none
 // SPDX-License-Identifier: Apache-2.0
 
@@ -9,14 +25,14 @@
 
 /* verilator lint_off DECLFILENAME */
 module tt_um_ascon_aead #(
-  parameter integer ENABLE_OUT_BUFFER = 0,
+  parameter integer ENABLE_OUT_BUFFER = `TT_ASCON_DEF_ENABLE_OUT_BUFFER,
  
   parameter integer MAX_DATA_BYTES = 32,
  
   parameter integer MAX_AD_BYTES = 32,
  
-  parameter integer ENABLE_DIAGNOSTICS = 0,
- parameter integer ENABLE_PERM_DEBUG = 0) (
+  parameter integer ENABLE_DIAGNOSTICS = `TT_ASCON_DEF_ENABLE_DIAGNOSTICS,
+ parameter integer ENABLE_PERM_DEBUG = `TT_ASCON_DEF_ENABLE_PERM_DEBUG) (
   input  wire [7:0] ui_in,    // Dedicated inputs
   output wire [7:0] uo_out,   // Dedicated outputs
   input  wire [7:0] uio_in,   // Bidirectional IO input path
