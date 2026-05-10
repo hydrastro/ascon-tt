@@ -4,7 +4,8 @@ TEST_DIR := test
 BUILD_DIR := build
 
 ASCON_RTL ?= ../ascon-rtl
-ASCON_RTL_RTL := $(ASCON_RTL)/rtl
+ASCON_CORE_RTL_DIR ?= $(SRC_DIR)/ascon_core
+ASCON_RTL_RTL ?= $(ASCON_CORE_RTL_DIR)
 ASCON_RTL_VEC_AD := $(ASCON_RTL)/sim/generated/ascon_aead128_ad_vectors.vh
 
 IVERILOG ?= iverilog
@@ -411,4 +412,26 @@ tt10-area-summary:
 
 tt10-release-check:
 	$(MAKE) tt9-release-check
+	$(MAKE) tt10-flow-preflight
+
+
+# ---------------------------------------------------------------------------
+# TT-10B PACKAGED CORE RTL
+# ---------------------------------------------------------------------------
+
+.PHONY: tt10b-refresh-core tt10b-package-check
+
+tt10b-refresh-core:
+	test -d "$(ASCON_RTL)/rtl"
+	mkdir -p $(ASCON_CORE_RTL_DIR)
+	cp $(ASCON_RTL)/rtl/ascon_round_comb.v $(ASCON_CORE_RTL_DIR)/ascon_round_comb.v
+	cp $(ASCON_RTL)/rtl/ascon_perm_unrolled.v $(ASCON_CORE_RTL_DIR)/ascon_perm_unrolled.v
+	cp $(ASCON_RTL)/rtl/ascon_aead128_enc_ad.v $(ASCON_CORE_RTL_DIR)/ascon_aead128_enc_ad.v
+	cp $(ASCON_RTL)/rtl/ascon_aead128_dec_ad.v $(ASCON_CORE_RTL_DIR)/ascon_aead128_dec_ad.v
+
+tt10b-package-check:
+	test -f $(ASCON_CORE_RTL_DIR)/ascon_round_comb.v
+	test -f $(ASCON_CORE_RTL_DIR)/ascon_perm_unrolled.v
+	test -f $(ASCON_CORE_RTL_DIR)/ascon_aead128_enc_ad.v
+	test -f $(ASCON_CORE_RTL_DIR)/ascon_aead128_dec_ad.v
 	$(MAKE) tt10-flow-preflight
