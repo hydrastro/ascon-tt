@@ -293,3 +293,44 @@ tt7a4-check:
 	$(MAKE) sim-aead-vectors-prod-directout
 	$(MAKE) synth-prod-aead-top-directout
 	$(MAKE) tt7a4-report
+
+
+# ---------------------------------------------------------------------------
+# TT-7A.5 DIRECT-OUTPUT BUFFER-SIZE MATRIX
+# ---------------------------------------------------------------------------
+
+TT7A5_DIR := $(BUILD_DIR)/tt7a5
+
+.PHONY: tt7a5-directout-buffer-matrix tt7a5-report tt7a5-clean
+
+$(TT7A5_DIR):
+	mkdir -p $(TT7A5_DIR)
+
+tt7a5-clean:
+	rm -rf $(TT7A5_DIR)
+
+tt7a5-directout-buffer-matrix: \
+	$(TT7A5_DIR)/prod_directout_ad8_msg8.txt \
+	$(TT7A5_DIR)/prod_directout_ad16_msg16.txt \
+	$(TT7A5_DIR)/prod_directout_ad32_msg32.txt \
+	$(TT7A5_DIR)/prod_directout_ad8_msg32.txt \
+	$(TT7A5_DIR)/prod_directout_ad32_msg8.txt
+	$(MAKE) tt7a5-report
+
+tt7a5-report:
+	python3 tools/report_tt5_profiles.py $(TT7A5_DIR)/*.txt
+
+$(TT7A5_DIR)/prod_directout_ad8_msg8.txt: $(SRC_FILES) | $(TT7A5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); chparam -set MAX_AD_BYTES 8 $(TOP); chparam -set MAX_DATA_BYTES 8 $(TOP); synth -top $(TOP); check; stat' > $@
+
+$(TT7A5_DIR)/prod_directout_ad16_msg16.txt: $(SRC_FILES) | $(TT7A5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); chparam -set MAX_AD_BYTES 16 $(TOP); chparam -set MAX_DATA_BYTES 16 $(TOP); synth -top $(TOP); check; stat' > $@
+
+$(TT7A5_DIR)/prod_directout_ad32_msg32.txt: $(SRC_FILES) | $(TT7A5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); chparam -set MAX_AD_BYTES 32 $(TOP); chparam -set MAX_DATA_BYTES 32 $(TOP); synth -top $(TOP); check; stat' > $@
+
+$(TT7A5_DIR)/prod_directout_ad8_msg32.txt: $(SRC_FILES) | $(TT7A5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); chparam -set MAX_AD_BYTES 8 $(TOP); chparam -set MAX_DATA_BYTES 32 $(TOP); synth -top $(TOP); check; stat' > $@
+
+$(TT7A5_DIR)/prod_directout_ad32_msg8.txt: $(SRC_FILES) | $(TT7A5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); chparam -set MAX_AD_BYTES 32 $(TOP); chparam -set MAX_DATA_BYTES 8 $(TOP); synth -top $(TOP); check; stat' > $@
