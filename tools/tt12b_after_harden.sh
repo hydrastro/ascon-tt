@@ -4,11 +4,18 @@ set -euo pipefail
 mkdir -p build/tt12b
 PY_TT="${PY_TT:-.venv/bin/python}"
 export PATH="$(pwd)/.venv/bin:$PATH"
+export PDK_ROOT="${PDK_ROOT:-$(pwd)/.ttsetup/pdk}"
+export PDK="${PDK:-sky130A}"
+export LIBRELANE_TAG="${LIBRELANE_TAG:-3.0.0rc1}"
 
 RUN_DIR="${RUN_DIR:-}"
 RUN_NAME="${RUN_NAME:-first_harden}"
 
 echo "[INFO] Printing Tiny Tapeout warnings/stats if available..."
+if [ ! -d runs/wokwi ] && [ ! -d runs ]; then
+  echo "[WARN] No completed hardening run found; skipping tt_tool report printouts."
+  exit 0
+fi
 if [[ -f tt/tt_tool.py ]]; then
   "$PY_TT" ./tt/tt_tool.py --print-warnings | tee build/tt12b/tt_print_warnings.log || true
   "$PY_TT" ./tt/tt_tool.py --print-stats | tee build/tt12b/tt_print_stats.log || true

@@ -15,6 +15,10 @@ VVP ?= vvp
 VERILATOR ?= verilator
 YOSYS ?= yosys
 TT_TOOLS_DIR ?= tt
+PDK_ROOT ?= $(CURDIR)/.ttsetup/pdk
+PDK ?= sky130A
+LIBRELANE_TAG ?= 3.0.0rc1
+
 
 TT_DEBUG_PARAMS := \
 	-DTT_DEBUG_DEFAULTS \
@@ -71,6 +75,7 @@ sanity:
 	@test -f .gitignore || { echo "ERROR: missing .gitignore"; exit 1; }
 	@test -f info.yaml
 	@test -f src/project.v
+	@test -f src/config.json
 	@test -f src/ascon_tt_perm_core.v
 	@test -f docs/info.md
 	@test -f docs/architecture.md
@@ -501,20 +506,21 @@ tt11b-submodule-status:
 	git submodule status --recursive
 
 tt12-create-user-config: tt11b-tools-check
+	@test -f src/config.json || { echo "ERROR: missing src/config.json"; exit 1; }
 	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-user-config
 
 tt12-harden: tt11b-tools-check
 	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --harden
 
 tt12-print-warnings: tt11b-tools-check
-	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-warnings
-
+	@if [ ! -d runs/wokwi ] && [ ! -d build/tt12b ]; then echo "No completed hardening run found yet."; exit 0; fi
+	-$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-warnings
 tt12-print-stats: tt11b-tools-check
-	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-stats
-
+	@if [ ! -d runs/wokwi ] && [ ! -d build/tt12b ]; then echo "No completed hardening run found yet."; exit 0; fi
+	-$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-stats
 tt12-print-cell-category: tt11b-tools-check
-	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-cell-category
-
+	@if [ ! -d runs/wokwi ] && [ ! -d build/tt12b ]; then echo "No completed hardening run found yet."; exit 0; fi
+	-$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-cell-category
 tt12-create-submission: tt11b-tools-check
 	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-tt-submission
 
@@ -590,7 +596,7 @@ tt12b-first-hardening-run:
 PY_VENV ?= .venv
 PYTHON ?= python3
 PY_TT ?= $(PY_VENV)/bin/python
-TT_ENV ?= PATH=$(CURDIR)/$(PY_VENV)/bin:$(PATH)
+TT_ENV ?= PATH=$(CURDIR)/$(PY_VENV)/bin:$(PATH) PDK_ROOT=$(PDK_ROOT) PDK=$(PDK) LIBRELANE_TAG=$(LIBRELANE_TAG)
 
 tt12-python-reset:
 	rm -rf $(PY_VENV)
@@ -601,11 +607,12 @@ tt12-python-venv:
 	$(PY_TT) -m pip install --upgrade pip setuptools wheel
 	$(PY_TT) -m pip install -r tt/requirements.txt
 	$(PY_TT) -m pip install yowasp-yosys
+	$(PY_TT) -m pip install "librelane==$(LIBRELANE_TAG)"
 	$(PY_TT) -c "import chevron, yaml, git; print('tt python deps OK')"
 
 tt12-python-check:
 	test -x $(PY_TT)
-	$(PY_TT) -c "import chevron, yaml, git; import klayout.db as pya; import cairosvg; print('tt python deps + klayout + cairosvg OK')"
+	$(PY_TT) -c "import chevron, yaml, git; import klayout.db as pya; import cairosvg; import librelane; print('tt python deps + klayout + cairosvg + librelane OK')"
 	$(TT_ENV) command -v yowasp-yosys
 	$(TT_ENV) $(PY_TT) ./tt/tt_tool.py --help >/dev/null
 
@@ -621,9 +628,47 @@ tt12-python-freeze:
 .PHONY: tt12-pre-harden-check
 
 tt12-pre-harden-check:
+	$(MAKE) tt12-env-check
+	$(MAKE) tt12-librelane-check
 	$(MAKE) sanity
 	$(MAKE) tt10-flow-preflight
 	$(MAKE) tt11b-tools-check
 	$(MAKE) tt12-python-check
 	$(MAKE) lint
 	$(MAKE) synth
+
+
+.PHONY: tt12h-check-config
+
+tt12h-check-config:
+	$(PY_TT) tools/tt12h_check_config.py
+
+.PHONY: tt12-librelane-install tt12-librelane-check tt12-env-check
+
+tt12-librelane-install:
+	test -x $(PY_TT)
+	$(PY_TT) -m pip install "librelane==$(LIBRELANE_TAG)"
+
+tt12-librelane-check:
+	test -x $(PY_TT)
+	$(PY_TT) -c "import librelane; print('librelane import OK')"
+	$(TT_ENV) $(PY_TT) -m librelane --version || true
+
+tt12-env-check:
+	@echo "PDK_ROOT=$(PDK_ROOT)"
+	@echo "PDK=$(PDK)"
+	@echo "LIBRELANE_TAG=$(LIBRELANE_TAG)"
+	@test -n "$(PDK_ROOT)"
+	@test -n "$(PDK)"
+	@test -n "$(LIBRELANE_TAG)"
+	@mkdir -p "$(PDK_ROOT)"
+
+
+# ---------------------------------------------------------------------------
+# TT-13 AREA FIT TRIAGE
+# ---------------------------------------------------------------------------
+
+.PHONY: tt13-area-report
+
+tt13-area-report:
+	python3 tools/tt13_area_fit_report.py runs build | tee build/tt13/area_fit_report.md

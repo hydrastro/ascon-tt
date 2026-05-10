@@ -17,6 +17,8 @@
       runtimeLibs = with pkgs; [
         stdenv.cc.cc.lib
 
+        librelane
+
         # CairoSVG / cairocffi native runtime
         cairo
         pixman
@@ -55,6 +57,7 @@
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs; [
           gnumake
+          openroad
           git
           iverilog
           verilator
