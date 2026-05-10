@@ -10,10 +10,14 @@ project:
   language: "Verilog"
   clock_hz: 25000000
   tiles: "TBD"
-  top_module: "tt_um_ascon_aead"
-  source_files:
-    - "project.v"
-    - "ascon_tt_serial_frontend.v"
-    - "ascon_tt_aead_core_stub.v"
-    - "ascon_tt_perm_core.v"
-    - "ascon_tt_aead_bridge.v"
+  top_module: tt_um_ascon_aead
+source_files:
+  - src/project.v
+  - src/ascon_tt_serial_frontend.v
+  - src/ascon_tt_aead_core_stub.v
+  - src/ascon_tt_perm_core.v
+  - src/ascon_tt_aead_bridge.v
+  - src/ascon_core/ascon_round_comb.v
+  - src/ascon_core/ascon_perm_unrolled.v
+  - src/ascon_core/ascon_aead128_enc_ad.v
+  - src/ascon_core/ascon_aead128_dec_ad.v
