@@ -726,3 +726,19 @@ repo-status:
 	@echo ""
 	@echo "== generated dirs =="
 	@find build runs sim/generated artifacts/runs -maxdepth 2 2>/dev/null | sort | head -80 || true
+
+
+# ---------------------------------------------------------------------------
+# TT-14C MIN AREA CONTRACT
+# ---------------------------------------------------------------------------
+
+.PHONY: tt14c-source-map tt14c-contract-check
+
+tt14c-source-map:
+	python3 tools/tt14c_source_map.py
+
+tt14c-contract-check:
+	@test -f docs/tt14c_min_area_repo_contract.md
+	@test -f docs/tt14c_shared_core_schedule.md
+	@test -f tools/tt14c_source_map.py
+	@echo "TT-14C contract OK"
