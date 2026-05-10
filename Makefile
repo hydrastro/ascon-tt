@@ -501,36 +501,33 @@ tt11b-submodule-status:
 	git submodule status --recursive
 
 tt12-create-user-config: tt11b-tools-check
-	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-user-config
+	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-user-config
 
 tt12-harden: tt11b-tools-check
-	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --harden
+	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --harden
 
 tt12-print-warnings: tt11b-tools-check
-	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-warnings
+	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-warnings
 
 tt12-print-stats: tt11b-tools-check
-	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-stats
+	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-stats
 
 tt12-print-cell-category: tt11b-tools-check
-	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-cell-category
+	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-cell-category
 
 tt12-create-submission: tt11b-tools-check
-	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-tt-submission
+	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-tt-submission
 
 tt12-create-png: tt11b-tools-check
-	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-png
+	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-png
 
 tt12-first-hardening-run:
-	$(MAKE) tt11-pre-gds-check
-	$(MAKE) tt11b-tools-check
+	$(MAKE) tt12-pre-harden-check
 	$(MAKE) tt12-create-user-config
 	$(MAKE) tt12-harden
 	$(MAKE) tt12-print-warnings
 	$(MAKE) tt12-print-stats
 	$(MAKE) tt12-print-cell-category
-
-
 # ---------------------------------------------------------------------------
 # TT-12A LAYOUT ARTIFACT POLICY
 # ---------------------------------------------------------------------------
@@ -580,13 +577,10 @@ tt12b-after-harden:
 	tools/tt12b_after_harden.sh
 
 tt12b-first-hardening-run:
-	$(MAKE) tt11-pre-gds-check
-	$(MAKE) tt11b-tools-check
+	$(MAKE) tt12-pre-harden-check
 	$(MAKE) tt12-create-user-config
 	$(MAKE) tt12-harden
 	$(MAKE) tt12b-after-harden
-
-
 # ---------------------------------------------------------------------------
 # TT-12 PYTHON ENVIRONMENT
 # ---------------------------------------------------------------------------
