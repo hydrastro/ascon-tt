@@ -12,6 +12,7 @@ IVERILOG ?= iverilog
 VVP ?= vvp
 VERILATOR ?= verilator
 YOSYS ?= yosys
+TT_TOOLS_DIR ?= tt
 
 TT_DEBUG_PARAMS := \
 	-DTT_DEBUG_DEFAULTS \
@@ -452,3 +453,51 @@ tt11-snapshot:
 tt11-pre-gds-check:
 	$(MAKE) tt10-release-check
 	$(MAKE) tt11-harden-preflight
+
+
+# ---------------------------------------------------------------------------
+# TT-11B SUPPORT TOOLS SUBMODULE / TT-12 WRAPPERS
+# ---------------------------------------------------------------------------
+
+.PHONY: tt11b-tools-check tt11b-submodule-status \
+        tt12-create-user-config tt12-harden tt12-print-warnings \
+        tt12-print-stats tt12-print-cell-category tt12-create-submission \
+        tt12-create-png tt12-first-hardening-run
+
+tt11b-tools-check:
+	test -f $(TT_TOOLS_DIR)/tt_tool.py
+	test -f $(TT_TOOLS_DIR)/requirements.txt
+	git submodule status --recursive $(TT_TOOLS_DIR)
+
+tt11b-submodule-status:
+	git submodule status --recursive
+
+tt12-create-user-config: tt11b-tools-check
+	./$(TT_TOOLS_DIR)/tt_tool.py --create-user-config
+
+tt12-harden: tt11b-tools-check
+	./$(TT_TOOLS_DIR)/tt_tool.py --harden
+
+tt12-print-warnings: tt11b-tools-check
+	./$(TT_TOOLS_DIR)/tt_tool.py --print-warnings
+
+tt12-print-stats: tt11b-tools-check
+	./$(TT_TOOLS_DIR)/tt_tool.py --print-stats
+
+tt12-print-cell-category: tt11b-tools-check
+	./$(TT_TOOLS_DIR)/tt_tool.py --print-cell-category
+
+tt12-create-submission: tt11b-tools-check
+	./$(TT_TOOLS_DIR)/tt_tool.py --create-tt-submission
+
+tt12-create-png: tt11b-tools-check
+	./$(TT_TOOLS_DIR)/tt_tool.py --create-png
+
+tt12-first-hardening-run:
+	$(MAKE) tt11-pre-gds-check
+	$(MAKE) tt11b-tools-check
+	$(MAKE) tt12-create-user-config
+	$(MAKE) tt12-harden
+	$(MAKE) tt12-print-warnings
+	$(MAKE) tt12-print-stats
+	$(MAKE) tt12-print-cell-category
