@@ -81,16 +81,31 @@ project = read("src/project.v")
 frontend = read("src/ascon_tt_serial_frontend.v")
 makefile = read("Makefile")
 
+def macro_default_ok(text: str, name: str, value: str) -> bool:
+    macro = f"TT_ASCON_DEF_{name}"
+    return bool(re.search(rf"`define\s+{re.escape(macro)}\s+{re.escape(value)}\b", text))
+
+
+def macro_default_ok(text: str, name: str, value: str) -> bool:
+    macro = f"TT_ASCON_DEF_{name}"
+    return bool(re.search(rf"`define\s+{re.escape(macro)}\s+{re.escape(value)}\b", text))
+
+
 def expect_param(text: str, module: str, name: str, value: str) -> None:
     m = re.search(rf"\bmodule\s+{re.escape(module)}\b.*?;", text, flags=re.S)
     if not m:
         fail(f"cannot find module header {module}")
         return
     header = m.group(0)
-    if re.search(rf"\bparameter\s+integer\s+{re.escape(name)}\s*=\s*{re.escape(value)}\b", header):
-        ok(f"{module}.{name} default is {value}")
+
+    literal_ok = re.search(rf"\bparameter\s+integer\s+{re.escape(name)}\s*=\s*{re.escape(value)}\b", header)
+    macro_ref = re.search(rf"\bparameter\s+integer\s+{re.escape(name)}\s*=\s*`TT_ASCON_DEF_{re.escape(name)}\b", header)
+    macro_ok = bool(macro_ref and macro_default_ok(text, name, value))
+
+    if literal_ok or macro_ok:
+        ok(f"{module}.{name} production default is {value}")
     else:
-        fail(f"{module}.{name} default is not {value}")
+        fail(f"{module}.{name} production default is not {value}")
 
 for name, value in [
     ("ENABLE_PERM_DEBUG", "0"),
