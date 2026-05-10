@@ -261,3 +261,35 @@ $(TT7A3_DIR)/prod_aead_top_ad8_msg32.txt: $(SRC_FILES) | $(TT7A3_DIR)
 
 $(TT7A3_DIR)/prod_aead_top_ad32_msg8.txt: $(SRC_FILES) | $(TT7A3_DIR)
 	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set MAX_AD_BYTES 32 $(TOP); chparam -set MAX_DATA_BYTES 8 $(TOP); synth -top $(TOP); check; stat' > $@
+
+
+# ---------------------------------------------------------------------------
+# TT-7A.4 DIRECT-OUTPUT PRODUCTION PROFILE
+# ---------------------------------------------------------------------------
+
+.PHONY: sim-aead-vectors-prod-directout synth-prod-aead-top-directout tt7a4-report tt7a4-check
+
+sim-aead-vectors-prod-directout: $(BUILD_DIR)/tb_tt_aead_vectors_prod_directout.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_tt_aead_vectors_prod_directout.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated \
+		-P $(TOP).ENABLE_PERM_DEBUG=0 \
+		-P $(TOP).ENABLE_DIAGNOSTICS=0 \
+		-P $(TOP).ENABLE_OUT_BUFFER=0 \
+		-o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
+
+synth-prod-aead-top-directout: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); synth -top $(TOP); check; stat' > $(BUILD_DIR)/yosys_tt_prod_aead_top_directout_stat.txt
+	cat $(BUILD_DIR)/yosys_tt_prod_aead_top_directout_stat.txt
+
+$(TT5_DIR)/prod_aead_top_directout.txt: $(SRC_FILES) | $(TT5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); synth -top $(TOP); check; stat' > $@
+
+tt7a4-report: $(TT5_DIR)/full_aead_bridge.txt $(TT5_DIR)/prod_aead_top.txt $(TT5_DIR)/prod_aead_top_directout.txt $(TT5_DIR)/perm_core.txt
+	python3 tools/report_tt5_profiles.py $^
+
+tt7a4-check:
+	$(MAKE) sim-aead-vectors-prod-directout
+	$(MAKE) synth-prod-aead-top-directout
+	$(MAKE) tt7a4-report

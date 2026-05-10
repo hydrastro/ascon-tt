@@ -12,6 +12,8 @@
 //   DATA bytes <= 32
 
 module ascon_tt_serial_frontend #(
+  parameter integer ENABLE_OUT_BUFFER = 1,
+ 
   parameter integer ENABLE_DIAGNOSTICS = 1,
  
   parameter integer ENABLE_PERM_DEBUG = 1,
@@ -356,7 +358,7 @@ module ascon_tt_serial_frontend #(
       end
       for (k = 0; k < MAX_DATA_BYTES; k = k + 1) begin
         data_mem_q[k] <= 8'd0;
-        out_mem_q[k] <= 8'd0;
+        if (ENABLE_OUT_BUFFER != 0) out_mem_q[k] <= 8'd0;
       end
 
       perm_rounds_q <= 4'd12;
@@ -463,16 +465,30 @@ module ascon_tt_serial_frontend #(
         result_tag_q <= aead_result_tag_w;
         result_loaded_q <= 1'b1;
 
-        for (k = 0; k < MAX_DATA_BYTES; k = k + 1) begin
-          if (k < msg_bytes_q) begin
-            if (k < 16) begin
-              out_mem_q[k] <= extract_byte128_5(aead_out_block0_w, k[4:0]);
+        if (ENABLE_OUT_BUFFER != 0) begin // TT7A4_DIRECT_OUTPUT_PROFILE
+
+          for (k = 0; k < MAX_DATA_BYTES; k = k + 1) begin
+
+            if (k < msg_bytes_q) begin
+
+              if (k < 16) begin
+
+                out_mem_q[k] <= extract_byte128_5(aead_out_block0_w, k[4:0]);
+
+              end else begin
+
+                out_mem_q[k] <= extract_byte128_5(aead_out_block1_w, (k[4:0] - 5'd16));
+
+              end
+
             end else begin
-              out_mem_q[k] <= extract_byte128_5(aead_out_block1_w, (k[4:0] - 5'd16));
+
+              out_mem_q[k] <= 8'd0;
+
             end
-          end else begin
-            out_mem_q[k] <= 8'd0;
+
           end
+
         end
 
         out_xor_q <= xor_output_blocks(aead_out_block0_w, aead_out_block1_w, msg_bytes_q);
@@ -694,9 +710,21 @@ module ascon_tt_serial_frontend #(
                 tag_xor_q <= tag_xor_q ^ cmd_data_i;
                 if (remaining_q == 32'd1) begin tag_loaded_q <= 1'b1; issue_response(8'hb4); end
               end
-              CMD_READ_OUT_BYTE: begin
-                if (cmd_data_i < MAX_DATA_BYTES[7:0]) issue_response(out_mem_q[cmd_data_i[4:0]]);
-                else begin error_o <= 1'b1; issue_response(8'hed); end
+              CMD_READ_OUT_BYTE: begin // TT7A4_DIRECT_OUTPUT_PROFILE
+                if (cmd_data_i < msg_bytes_q[7:0]) begin
+                  if (ENABLE_OUT_BUFFER != 0) begin
+                    if (cmd_data_i < MAX_DATA_BYTES[7:0]) issue_response(out_mem_q[cmd_data_i[4:0]]);
+                    else issue_response(8'he6);
+                  end else begin
+                    if (cmd_data_i < 8'd16) begin
+                      issue_response(extract_byte128_5(aead_out_block0_w, cmd_data_i[4:0]));
+                    end else begin
+                      issue_response(extract_byte128_5(aead_out_block1_w, (cmd_data_i[4:0] - 5'd16)));
+                    end
+                  end
+                end else begin
+                  issue_response(8'he6);
+                end
               end
               CMD_READ_RESULT_TAG: begin
                 if (cmd_data_i < 8'd16) issue_response(extract_byte128(result_tag_q, cmd_data_i[3:0]));

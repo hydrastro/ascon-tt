@@ -9,6 +9,8 @@
 
 /* verilator lint_off DECLFILENAME */
 module tt_um_ascon_aead #(
+  parameter integer ENABLE_OUT_BUFFER = 1,
+ 
   parameter integer MAX_DATA_BYTES = 32,
  
   parameter integer MAX_AD_BYTES = 32,
@@ -26,6 +28,7 @@ module tt_um_ascon_aead #(
 );
 
   ascon_tt_serial_frontend #(
+    .ENABLE_OUT_BUFFER(ENABLE_OUT_BUFFER),
     .MAX_DATA_BYTES(MAX_DATA_BYTES),
     .MAX_AD_BYTES(MAX_AD_BYTES),
     .ENABLE_DIAGNOSTICS(ENABLE_DIAGNOSTICS),
