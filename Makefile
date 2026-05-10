@@ -435,3 +435,20 @@ tt10b-package-check:
 	test -f $(ASCON_CORE_RTL_DIR)/ascon_aead128_enc_ad.v
 	test -f $(ASCON_CORE_RTL_DIR)/ascon_aead128_dec_ad.v
 	$(MAKE) tt10-flow-preflight
+
+
+# ---------------------------------------------------------------------------
+# TT-11 HARDENING HANDOFF
+# ---------------------------------------------------------------------------
+
+.PHONY: tt11-harden-preflight tt11-snapshot tt11-pre-gds-check
+
+tt11-harden-preflight:
+	python3 tools/tt11_hardening_preflight.py
+
+tt11-snapshot:
+	tools/tt11_make_snapshot.sh
+
+tt11-pre-gds-check:
+	$(MAKE) tt10-release-check
+	$(MAKE) tt11-harden-preflight
