@@ -544,3 +544,27 @@ tt12a-dvc-status:
 	else \
 		echo "DVC not installed. Install/configure DVC only when ready to track generated layout artifacts."; \
 	fi
+
+
+# ---------------------------------------------------------------------------
+# TT-12B FIRST HARDENING RUN TRIAGE
+# ---------------------------------------------------------------------------
+
+.PHONY: tt12b-find-run-dir tt12b-triage tt12b-after-harden tt12b-first-hardening-run
+
+tt12b-find-run-dir:
+	python3 tools/tt12b_find_run_dir.py runs build
+
+tt12b-triage:
+	test -n "$(RUN_DIR)"
+	python3 tools/tt12b_triage_reports.py "$(RUN_DIR)" build/tt12b/triage.md
+
+tt12b-after-harden:
+	tools/tt12b_after_harden.sh
+
+tt12b-first-hardening-run:
+	$(MAKE) tt11-pre-gds-check
+	$(MAKE) tt11b-tools-check
+	$(MAKE) tt12-create-user-config
+	$(MAKE) tt12-harden
+	$(MAKE) tt12b-after-harden
