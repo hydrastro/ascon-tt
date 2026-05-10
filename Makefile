@@ -220,3 +220,44 @@ tt7a2-check:
 	$(MAKE) sim-aead-vectors-prod
 	$(MAKE) synth-prod-aead-top
 	$(MAKE) tt7a2-report
+
+
+# ---------------------------------------------------------------------------
+# TT-7A.3 PRODUCTION BUFFER-SIZE MATRIX
+# ---------------------------------------------------------------------------
+
+TT7A3_DIR := $(BUILD_DIR)/tt7a3
+
+.PHONY: tt7a3-buffer-matrix tt7a3-report tt7a3-clean
+
+$(TT7A3_DIR):
+	mkdir -p $(TT7A3_DIR)
+
+tt7a3-clean:
+	rm -rf $(TT7A3_DIR)
+
+tt7a3-buffer-matrix: \
+	$(TT7A3_DIR)/prod_aead_top_ad8_msg8.txt \
+	$(TT7A3_DIR)/prod_aead_top_ad16_msg16.txt \
+	$(TT7A3_DIR)/prod_aead_top_ad32_msg32.txt \
+	$(TT7A3_DIR)/prod_aead_top_ad8_msg32.txt \
+	$(TT7A3_DIR)/prod_aead_top_ad32_msg8.txt
+	$(MAKE) tt7a3-report
+
+tt7a3-report:
+	python3 tools/report_tt5_profiles.py $(TT7A3_DIR)/*.txt
+
+$(TT7A3_DIR)/prod_aead_top_ad8_msg8.txt: $(SRC_FILES) | $(TT7A3_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set MAX_AD_BYTES 8 $(TOP); chparam -set MAX_DATA_BYTES 8 $(TOP); synth -top $(TOP); check; stat' > $@
+
+$(TT7A3_DIR)/prod_aead_top_ad16_msg16.txt: $(SRC_FILES) | $(TT7A3_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set MAX_AD_BYTES 16 $(TOP); chparam -set MAX_DATA_BYTES 16 $(TOP); synth -top $(TOP); check; stat' > $@
+
+$(TT7A3_DIR)/prod_aead_top_ad32_msg32.txt: $(SRC_FILES) | $(TT7A3_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set MAX_AD_BYTES 32 $(TOP); chparam -set MAX_DATA_BYTES 32 $(TOP); synth -top $(TOP); check; stat' > $@
+
+$(TT7A3_DIR)/prod_aead_top_ad8_msg32.txt: $(SRC_FILES) | $(TT7A3_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set MAX_AD_BYTES 8 $(TOP); chparam -set MAX_DATA_BYTES 32 $(TOP); synth -top $(TOP); check; stat' > $@
+
+$(TT7A3_DIR)/prod_aead_top_ad32_msg8.txt: $(SRC_FILES) | $(TT7A3_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set MAX_AD_BYTES 32 $(TOP); chparam -set MAX_DATA_BYTES 8 $(TOP); synth -top $(TOP); check; stat' > $@

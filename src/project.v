@@ -9,6 +9,10 @@
 
 /* verilator lint_off DECLFILENAME */
 module tt_um_ascon_aead #(
+  parameter integer MAX_DATA_BYTES = 32,
+ 
+  parameter integer MAX_AD_BYTES = 32,
+ 
   parameter integer ENABLE_DIAGNOSTICS = 1,
  parameter integer ENABLE_PERM_DEBUG = 1) (
   input  wire [7:0] ui_in,    // Dedicated inputs
@@ -22,6 +26,8 @@ module tt_um_ascon_aead #(
 );
 
   ascon_tt_serial_frontend #(
+    .MAX_DATA_BYTES(MAX_DATA_BYTES),
+    .MAX_AD_BYTES(MAX_AD_BYTES),
     .ENABLE_DIAGNOSTICS(ENABLE_DIAGNOSTICS),
     .ENABLE_PERM_DEBUG(ENABLE_PERM_DEBUG)
   ) u_frontend (
