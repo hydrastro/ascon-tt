@@ -48,14 +48,19 @@ synth: | $(BUILD_DIR)
 	cat $(BUILD_DIR)/yosys_tt_scaffold_stat.txt
 
 sanity:
-	@test -f info.yaml
-	@test -f src/project.v
-	@test -f src/ascon_tt_perm_core.v
-	@test -f docs/info.md
-	@test -f docs/architecture.md
-	@test -f "$(ASCON_RTL_RTL)/ascon_round_comb.v"
-	@test -f "$(ASCON_RTL_RTL)/ascon_perm_unrolled.v"
-	@! find . -path ./.git -prune -o \( -name '*.rej' -o -name '*.orig' -o -name '*.patch' -o -name '*.zip' -o -name '*.tar.gz' \) -print | grep -q .
+	@test -f info.yaml || { echo "ERROR: missing info.yaml"; exit 1; }
+	@test -f src/project.v || { echo "ERROR: missing src/project.v"; exit 1; }
+	@test -f src/ascon_tt_perm_core.v || { echo "ERROR: missing src/ascon_tt_perm_core.v"; exit 1; }
+	@test -f docs/info.md || { echo "ERROR: missing docs/info.md"; exit 1; }
+	@test -f docs/architecture.md || { echo "ERROR: missing docs/architecture.md"; exit 1; }
+	@test -f "$(ASCON_RTL_RTL)/ascon_round_comb.v" || { echo "ERROR: missing $(ASCON_RTL_RTL)/ascon_round_comb.v"; exit 1; }
+	@test -f "$(ASCON_RTL_RTL)/ascon_perm_unrolled.v" || { echo "ERROR: missing $(ASCON_RTL_RTL)/ascon_perm_unrolled.v"; exit 1; }
+	@bad="$$(find . -path ./.git -prune -o \( -name '*.rej' -o -name '*.orig' -o -name '*.patch' -o -name '*.zip' -o -name '*.tar.gz' \) -print)"; \
+	if [ -n "$$bad" ]; then \
+		echo "ERROR: stale/generated artifact files found:"; \
+		echo "$$bad"; \
+		exit 1; \
+	fi
 	@echo "sanity OK"
 
 clean:
@@ -100,3 +105,48 @@ sim-aead-vectors: $(BUILD_DIR)/tb_tt_aead_vectors.vvp
 
 $(BUILD_DIR)/tb_tt_aead_vectors.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
 	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated -o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
+
+# ---------------------------------------------------------------------------
+# TT-5 PROFILE MATRIX
+# ---------------------------------------------------------------------------
+
+TT5_DIR := $(BUILD_DIR)/tt5
+
+.PHONY: tt5-profiles tt5-report tt5-clean tt5-full-debug tt5-full-aead-bridge tt5-enc-only tt5-dec-only tt5-perm-debug tt5-perm-core
+
+$(TT5_DIR):
+	mkdir -p $(TT5_DIR)
+
+tt5-clean:
+	rm -rf $(TT5_DIR)
+
+tt5-full-debug: $(TT5_DIR)/full_debug.txt
+tt5-full-aead-bridge: $(TT5_DIR)/full_aead_bridge.txt
+tt5-enc-only: $(TT5_DIR)/enc_only.txt
+tt5-dec-only: $(TT5_DIR)/dec_only.txt
+tt5-perm-debug: $(TT5_DIR)/perm_debug.txt
+tt5-perm-core: $(TT5_DIR)/perm_core.txt
+
+tt5-profiles: tt5-full-debug tt5-full-aead-bridge tt5-enc-only tt5-dec-only tt5-perm-debug tt5-perm-core
+	$(MAKE) tt5-report
+
+tt5-report:
+	python3 tools/report_tt5_profiles.py $(TT5_DIR)/*.txt
+
+$(TT5_DIR)/full_debug.txt: $(SRC_FILES) | $(TT5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); synth -top $(TOP); check; stat' > $@
+
+$(TT5_DIR)/full_aead_bridge.txt: $(SRC_DIR)/ascon_tt_aead_bridge.v $(ASCON_RTL_FILES) | $(TT5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_DIR)/ascon_tt_aead_bridge.v $(ASCON_RTL_FILES); synth -top ascon_tt_aead_bridge; check; stat' > $@
+
+$(TT5_DIR)/enc_only.txt: $(ASCON_RTL_FILES) | $(TT5_DIR)
+	$(YOSYS) -p 'read_verilog $(ASCON_RTL_FILES); synth -top ascon_aead128_enc_ad; check; stat' > $@
+
+$(TT5_DIR)/dec_only.txt: $(ASCON_RTL_FILES) | $(TT5_DIR)
+	$(YOSYS) -p 'read_verilog $(ASCON_RTL_FILES); synth -top ascon_aead128_dec_ad; check; stat' > $@
+
+$(TT5_DIR)/perm_debug.txt: $(SRC_DIR)/ascon_tt_perm_core.v $(ASCON_RTL_RTL)/ascon_round_comb.v $(ASCON_RTL_RTL)/ascon_perm_unrolled.v | $(TT5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_DIR)/ascon_tt_perm_core.v $(ASCON_RTL_RTL)/ascon_round_comb.v $(ASCON_RTL_RTL)/ascon_perm_unrolled.v; synth -top ascon_tt_perm_core; check; stat' > $@
+
+$(TT5_DIR)/perm_core.txt: $(ASCON_RTL_RTL)/ascon_round_comb.v $(ASCON_RTL_RTL)/ascon_perm_unrolled.v | $(TT5_DIR)
+	$(YOSYS) -p 'read_verilog $(ASCON_RTL_RTL)/ascon_round_comb.v $(ASCON_RTL_RTL)/ascon_perm_unrolled.v; synth -top ascon_perm_unrolled; check; stat' > $@
