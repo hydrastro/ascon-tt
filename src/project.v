@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 `default_nettype none
 // SPDX-License-Identifier: Apache-2.0
 
@@ -6,6 +7,7 @@
 // Keep this file thin.  The protocol implementation lives in
 // ascon_tt_serial_frontend.v and the full AEAD engine will be added behind it.
 
+/* verilator lint_off DECLFILENAME */
 module tt_um_ascon_aead (
   input  wire [7:0] ui_in,    // Dedicated inputs
   output wire [7:0] uo_out,   // Dedicated outputs
@@ -46,5 +48,6 @@ module tt_um_ascon_aead (
   wire _unused = &{uio_in[7:2], 1'b0};
 
 endmodule
+/* verilator lint_on DECLFILENAME */
 
 `default_nettype wire

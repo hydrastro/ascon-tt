@@ -31,7 +31,7 @@ module tt_um_ascon_aead (
 );
 ```
 
-## Proposed serial protocol
+## Serial protocol
 
 Dedicated input bus:
 
@@ -62,9 +62,9 @@ uio_out[5] = error
 uio_out[7:6] reserved
 ```
 
-`uio_oe` is set for the output/status bits driven by the design.
+`uio_oe = 8'b0011_1111`, so the design drives `uio_out[5:0]`.
 
-## Initial command map
+## Command map
 
 ```text
 0x00 NOP
@@ -80,15 +80,42 @@ uio_out[7:6] reserved
 
 0x20 START
 0x21 STATUS
-0x30 READ_DATA         emits msg_bytes bytes
-0x31 READ_TAG          emits 16 bytes
+
 0x40 CLEAR
+
+0x50 READ_MODE
+0x51 READ_AD_COUNT_LOW
+0x52 READ_DATA_COUNT_LOW
+0x53 READ_KEY_XOR
+0x54 READ_NONCE_XOR
+0x55 READ_TAG_XOR
+0x56 READ_AD_XOR
+0x57 READ_DATA_XOR
 ```
+
+## Current TT-2 status
+
+Implemented:
+
+- command parser
+- mode register
+- AD/message length registers
+- key/nonce/tag loading
+- AD/data byte counting
+- XOR debug checksums
+- START stub validation
+
+Not yet implemented:
+
+- real AEAD execution
+- output ciphertext/plaintext queue
+- tag readout
+- shared permutation FSM
 
 ## Implementation plan
 
 1. TT-1: project scaffold and protocol skeleton.
-2. TT-2: byte storage frontend and command parser.
+2. TT-2: byte-storage frontend and command parser.
 3. TT-3: shared full-AEAD FSM using one RPC=1 permutation engine.
 4. TT-4: test against `ascon-rtl` vectors.
 5. TT-5: OpenLane/Tiny Tapeout area/frequency loop.

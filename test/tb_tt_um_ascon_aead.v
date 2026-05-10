@@ -12,6 +12,8 @@ module tb_tt_um_ascon_aead;
   reg rst_n;
 
   integer errors;
+  integer i;
+  reg [7:0] expected_xor;
 
   tt_um_ascon_aead dut (
     .ui_in(ui_in),
@@ -39,7 +41,7 @@ module tb_tt_um_ascon_aead;
     end
   endtask
 
-  task send_byte;
+  task send_byte_no_resp;
     input [7:0] value;
     begin
       @(negedge clk);
@@ -64,7 +66,7 @@ module tb_tt_um_ascon_aead;
     begin
       timeout = 0;
       uio_in[1] = 1'b1; // out_ready
-      while (!uio_out[1] && timeout < 20) begin
+      while (!uio_out[1] && timeout < 30) begin
         @(posedge clk);
         timeout = timeout + 1;
       end
@@ -82,6 +84,56 @@ module tb_tt_um_ascon_aead;
     end
   endtask
 
+  task send_cmd_expect;
+    input [7:0] cmd;
+    input [7:0] expected;
+    begin
+      send_byte_no_resp(cmd);
+      expect_response(expected);
+    end
+  endtask
+
+  task send_cmd_payload_expect;
+    input [7:0] cmd;
+    input integer nbytes;
+    input [7:0] base;
+    input [7:0] expected;
+    integer j;
+    begin
+      send_byte_no_resp(cmd);
+      for (j = 0; j < nbytes; j = j + 1) begin
+        send_byte_no_resp(base + j[7:0]);
+      end
+      expect_response(expected);
+    end
+  endtask
+
+  task set_len_le;
+    input [7:0] cmd;
+    input [31:0] len;
+    input [7:0] expected;
+    begin
+      send_byte_no_resp(cmd);
+      send_byte_no_resp(len[7:0]);
+      send_byte_no_resp(len[15:8]);
+      send_byte_no_resp(len[23:16]);
+      send_byte_no_resp(len[31:24]);
+      expect_response(expected);
+    end
+  endtask
+
+  function [7:0] xor_range;
+    input [7:0] base;
+    input integer nbytes;
+    integer j;
+    begin
+      xor_range = 8'd0;
+      for (j = 0; j < nbytes; j = j + 1) begin
+        xor_range = xor_range ^ (base + j[7:0]);
+      end
+    end
+  endfunction
+
   initial begin
     errors = 0;
     reset_dut();
@@ -91,25 +143,54 @@ module tb_tt_um_ascon_aead;
       errors = errors + 1;
     end
 
-    send_byte(8'h01); // SET_MODE
-    send_byte(8'h01); // decrypt
-    expect_response(8'h4b);
+    send_cmd_expect(8'h40, 8'hc1); // CLEAR
 
-    send_byte(8'h21); // STATUS
-    // Status bit layout: {00,error,auth_ok,done,busy,mode,1}
-    expect_response(8'h03);
+    // SET_MODE decrypt
+    send_byte_no_resp(8'h01);
+    send_byte_no_resp(8'h01);
+    expect_response(8'ha1);
 
-    send_byte(8'h40); // CLEAR
-    expect_response(8'hc1);
+    send_cmd_expect(8'h50, 8'h01); // READ_MODE
 
-    send_byte(8'hff); // invalid
-    expect_response(8'hee);
+    set_len_le(8'h02, 32'd17, 8'ha2); // SET_AD_BYTES
+    set_len_le(8'h03, 32'd31, 8'ha3); // SET_MSG_BYTES
+
+    send_cmd_payload_expect(8'h10, 16, 8'h10, 8'hb0); // LOAD_KEY
+    expected_xor = xor_range(8'h10, 16);
+    send_cmd_expect(8'h53, expected_xor);
+
+    send_cmd_payload_expect(8'h11, 16, 8'h30, 8'hb1); // LOAD_NONCE
+    expected_xor = xor_range(8'h30, 16);
+    send_cmd_expect(8'h54, expected_xor);
+
+    send_cmd_payload_expect(8'h12, 17, 8'h80, 8'hb2); // LOAD_AD
+    send_cmd_expect(8'h51, 8'd17);
+    expected_xor = xor_range(8'h80, 17);
+    send_cmd_expect(8'h56, expected_xor);
+
+    send_cmd_payload_expect(8'h13, 31, 8'ha0, 8'hb3); // LOAD_DATA
+    send_cmd_expect(8'h52, 8'd31);
+    expected_xor = xor_range(8'ha0, 31);
+    send_cmd_expect(8'h57, expected_xor);
+
+    send_cmd_payload_expect(8'h14, 16, 8'hc0, 8'hb4); // LOAD_TAG
+    expected_xor = xor_range(8'hc0, 16);
+    send_cmd_expect(8'h55, expected_xor);
+
+    // START stub should accept because key, nonce, and decrypt tag are loaded.
+    send_cmd_expect(8'h20, 8'hd0);
+
+    // Status: alive=1, mode=1, done=1, auth_ok=1, key_loaded=1, nonce_loaded=1.
+    // busy should be 0 once response is consumed; error should be 0.
+    send_cmd_expect(8'h21, 8'hdb);
+
+    send_cmd_expect(8'hff, 8'hee);
 
     if (errors == 0) begin
-      $display("ALL ASCON TT SCAFFOLD TESTS PASSED");
+      $display("ALL ASCON TT BYTE FRONTEND TESTS PASSED");
       $finish;
     end else begin
-      $display("ASCON TT SCAFFOLD TESTS FAILED errors=%0d", errors);
+      $display("ASCON TT BYTE FRONTEND TESTS FAILED errors=%0d", errors);
       $fatal;
     end
   end
