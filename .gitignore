@@ -42,3 +42,7 @@ __pycache__/
 /artifacts/runs/*
 !/artifacts/manifests/
 !/artifacts/manifests/.gitkeep
+.venv/
+*.pyc
+.mypy_cache/
+/sim/generated/

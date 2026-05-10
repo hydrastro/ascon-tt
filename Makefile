@@ -4,9 +4,11 @@ TEST_DIR := test
 BUILD_DIR := build
 
 ASCON_RTL ?= ../ascon-rtl
+ASCON_RTL_WORKTREE ?= ../ascon-rtl
+SIM_GEN_DIR ?= sim/generated
 ASCON_CORE_RTL_DIR ?= $(SRC_DIR)/ascon_core
 ASCON_RTL_RTL ?= $(ASCON_CORE_RTL_DIR)
-ASCON_RTL_VEC_AD := $(ASCON_RTL)/sim/generated/ascon_aead128_ad_vectors.vh
+ASCON_RTL_VEC_AD := $(SIM_GEN_DIR)/ascon_aead128_ad_vectors.vh
 
 IVERILOG ?= iverilog
 VVP ?= vvp
@@ -56,7 +58,7 @@ sim: $(BUILD_DIR)/tb_tt_um_ascon_aead.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_um_ascon_aead.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_um_ascon_aead.v | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated $(TT_DEBUG_PARAMS) -o $@ $(TEST_DIR)/tb_tt_um_ascon_aead.v $(SRC_FILES)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(SIM_GEN_DIR) $(TT_DEBUG_PARAMS) -o $@ $(TEST_DIR)/tb_tt_um_ascon_aead.v $(SRC_FILES)
 
 lint:
 	$(VERILATOR) --lint-only --timing -Wall -Wno-DECLFILENAME -Wno-UNUSEDSIGNAL -Wno-WIDTHEXPAND -I$(SRC_DIR) -I$(ASCON_RTL_RTL) --top-module $(TOP) $(SRC_FILES)
@@ -67,14 +69,22 @@ synth: | $(BUILD_DIR)
 
 sanity:
 	@test -f .gitignore || { echo "ERROR: missing .gitignore"; exit 1; }
-	@test -f info.yaml || { echo "ERROR: missing info.yaml"; exit 1; }
-	@test -f src/project.v || { echo "ERROR: missing src/project.v"; exit 1; }
-	@test -f src/ascon_tt_perm_core.v || { echo "ERROR: missing src/ascon_tt_perm_core.v"; exit 1; }
-	@test -f docs/info.md || { echo "ERROR: missing docs/info.md"; exit 1; }
-	@test -f docs/architecture.md || { echo "ERROR: missing docs/architecture.md"; exit 1; }
-	@test -f "$(ASCON_RTL_RTL)/ascon_round_comb.v" || { echo "ERROR: missing $(ASCON_RTL_RTL)/ascon_round_comb.v"; exit 1; }
-	@test -f "$(ASCON_RTL_RTL)/ascon_perm_unrolled.v" || { echo "ERROR: missing $(ASCON_RTL_RTL)/ascon_perm_unrolled.v"; exit 1; }
-	@bad="$$(find . -path ./.git -prune -o \( -name '*.rej' -o -name '*.orig' -o -name '*.patch' -o -name '*.zip' -o -name '*.tar.gz' \) -print)"; \
+	@test -f info.yaml
+	@test -f src/project.v
+	@test -f src/ascon_tt_perm_core.v
+	@test -f docs/info.md
+	@test -f docs/architecture.md
+	@test -f src/ascon_core/ascon_round_comb.v
+	@test -f src/ascon_core/ascon_perm_unrolled.v
+	@bad="$$(find . \
+		-path ./.git -prune -o \
+		-path ./build -prune -o \
+		-path ./.venv -prune -o \
+		-path ./tt -prune -o \
+		-path ./runs -prune -o \
+		-path ./artifacts/runs -prune -o \
+		-path ./sim/generated -prune -o \
+		\( -name '*.rej' -o -name '*.orig' -o -name '*.patch' -o -name '*.zip' -o -name '*.tar.gz' \) -print)"; \
 	if [ -n "$$bad" ]; then \
 		echo "ERROR: stale/generated artifact files found:"; \
 		echo "$$bad"; \
@@ -96,7 +106,7 @@ sim-perm-oracle: $(BUILD_DIR)/tb_tt_perm_oracle.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_perm_oracle.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_perm_oracle.v | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated $(TT_DEBUG_PARAMS) -o $@ $(TEST_DIR)/tb_tt_perm_oracle.v $(SRC_FILES)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(SIM_GEN_DIR) $(TT_DEBUG_PARAMS) -o $@ $(TEST_DIR)/tb_tt_perm_oracle.v $(SRC_FILES)
 
 # ---------------------------------------------------------------------------
 # TT-4A JOB BUFFER TEST
@@ -108,7 +118,7 @@ sim-job-buffers: $(BUILD_DIR)/tb_tt_job_buffers.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_job_buffers.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_job_buffers.v | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated $(TT_DEBUG_PARAMS) -o $@ $(TEST_DIR)/tb_tt_job_buffers.v $(SRC_FILES)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(SIM_GEN_DIR) $(TT_DEBUG_PARAMS) -o $@ $(TEST_DIR)/tb_tt_job_buffers.v $(SRC_FILES)
 
 # ---------------------------------------------------------------------------
 # TT-4B FULL AEAD VECTOR TEST
@@ -117,13 +127,20 @@ $(BUILD_DIR)/tb_tt_job_buffers.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_job_buffers.v
 .PHONY: sim-aead-vectors
 
 $(ASCON_RTL_VEC_AD):
-	$(MAKE) -C $(ASCON_RTL) vectors-ascon-c
+	mkdir -p $(SIM_GEN_DIR)
+	@if [ ! -d "$(ASCON_RTL_WORKTREE)" ]; then \
+		echo "ERROR: ASCON_RTL_WORKTREE=$(ASCON_RTL_WORKTREE) does not exist."; \
+		echo "Use a writable ascon-rtl checkout for vector generation, not the read-only Nix store ASCON_RTL."; \
+		exit 1; \
+	fi
+	$(MAKE) -C $(ASCON_RTL_WORKTREE) vectors-ascon-c
+	cp $(ASCON_RTL_WORKTREE)/sim/generated/ascon_aead128_ad_vectors.vh $(ASCON_RTL_VEC_AD)
 
 sim-aead-vectors: $(BUILD_DIR)/tb_tt_aead_vectors.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_aead_vectors.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated -o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(SIM_GEN_DIR) -o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
 
 # ---------------------------------------------------------------------------
 # TT-5 PROFILE MATRIX
@@ -181,7 +198,7 @@ sim-aead-vectors-noperm: $(BUILD_DIR)/tb_tt_aead_vectors_noperm.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_aead_vectors_noperm.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated \
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(SIM_GEN_DIR) \
 		-P $(TOP).ENABLE_PERM_DEBUG=0 \
 		-o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
 
@@ -220,7 +237,7 @@ sim-aead-vectors-prod: $(BUILD_DIR)/tb_tt_aead_vectors_prod.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_aead_vectors_prod.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated \
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(SIM_GEN_DIR) \
 		-P $(TOP).ENABLE_PERM_DEBUG=0 \
 		-P $(TOP).ENABLE_DIAGNOSTICS=0 \
 		-o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
@@ -292,7 +309,7 @@ sim-aead-vectors-prod-directout: $(BUILD_DIR)/tb_tt_aead_vectors_prod_directout.
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_aead_vectors_prod_directout.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated \
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(SIM_GEN_DIR) \
 		-P $(TOP).ENABLE_PERM_DEBUG=0 \
 		-P $(TOP).ENABLE_DIAGNOSTICS=0 \
 		-P $(TOP).ENABLE_OUT_BUFFER=0 \
@@ -407,7 +424,7 @@ tt9-release-check:
 .PHONY: tt10-flow-preflight tt10-release-check tt10-area-summary
 
 tt10-flow-preflight:
-	python3 tools/tt10_flow_preflight.py
+	$(PY_TT) tools/tt10_flow_preflight.py
 
 tt10-area-summary:
 	python3 tools/tt9_area_summary.py $(BUILD_DIR)/yosys_tt_scaffold_stat.txt
@@ -446,7 +463,7 @@ tt10b-package-check:
 .PHONY: tt11-harden-preflight tt11-snapshot tt11-pre-gds-check
 
 tt11-harden-preflight:
-	python3 tools/tt11_hardening_preflight.py
+	$(PY_TT) tools/tt11_hardening_preflight.py
 
 tt11-snapshot:
 	tools/tt11_make_snapshot.sh
@@ -484,25 +501,25 @@ tt11b-submodule-status:
 	git submodule status --recursive
 
 tt12-create-user-config: tt11b-tools-check
-	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-user-config
+	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-user-config
 
 tt12-harden: tt11b-tools-check
-	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --harden
+	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --harden
 
 tt12-print-warnings: tt11b-tools-check
-	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-warnings
+	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-warnings
 
 tt12-print-stats: tt11b-tools-check
-	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-stats
+	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-stats
 
 tt12-print-cell-category: tt11b-tools-check
-	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-cell-category
+	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-cell-category
 
 tt12-create-submission: tt11b-tools-check
-	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-tt-submission
+	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-tt-submission
 
 tt12-create-png: tt11b-tools-check
-	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-png
+	$(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-png
 
 tt12-first-hardening-run:
 	$(MAKE) tt11-pre-gds-check
@@ -579,6 +596,7 @@ tt12b-first-hardening-run:
 PY_VENV ?= .venv
 PYTHON ?= python3
 PY_TT ?= $(PY_VENV)/bin/python
+TT_ENV ?= PATH=$(CURDIR)/$(PY_VENV)/bin:$(PATH)
 
 tt12-python-reset:
 	rm -rf $(PY_VENV)
@@ -588,14 +606,30 @@ tt12-python-venv:
 	$(PYTHON) -m venv $(PY_VENV)
 	$(PY_TT) -m pip install --upgrade pip setuptools wheel
 	$(PY_TT) -m pip install -r tt/requirements.txt
+	$(PY_TT) -m pip install yowasp-yosys
 	$(PY_TT) -c "import chevron, yaml, git; print('tt python deps OK')"
 
 tt12-python-check:
 	test -x $(PY_TT)
 	$(PY_TT) -c "import chevron, yaml, git; import klayout.db as pya; import cairosvg; print('tt python deps + klayout + cairosvg OK')"
-	$(PY_TT) ./tt/tt_tool.py --help >/dev/null
+	$(TT_ENV) command -v yowasp-yosys
+	$(TT_ENV) $(PY_TT) ./tt/tt_tool.py --help >/dev/null
 
 tt12-python-freeze:
 	test -x $(PY_VENV)/bin/python
 	$(PY_TT) -m pip freeze | sort > build/tt12_python_freeze.txt
 	cat build/tt12_python_freeze.txt
+
+# ---------------------------------------------------------------------------
+# TT-12F HARDENING ENTRYPOINT
+# ---------------------------------------------------------------------------
+
+.PHONY: tt12-pre-harden-check
+
+tt12-pre-harden-check:
+	$(MAKE) sanity
+	$(MAKE) tt10-flow-preflight
+	$(MAKE) tt11b-tools-check
+	$(MAKE) tt12-python-check
+	$(MAKE) lint
+	$(MAKE) synth

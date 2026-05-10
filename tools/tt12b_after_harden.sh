@@ -2,15 +2,17 @@
 set -euo pipefail
 
 mkdir -p build/tt12b
+PY_TT="${PY_TT:-.venv/bin/python}"
+export PATH="$(pwd)/.venv/bin:$PATH"
 
 RUN_DIR="${RUN_DIR:-}"
 RUN_NAME="${RUN_NAME:-first_harden}"
 
 echo "[INFO] Printing Tiny Tapeout warnings/stats if available..."
 if [[ -f tt/tt_tool.py ]]; then
-  ./tt/tt_tool.py --print-warnings | tee build/tt12b/tt_print_warnings.log || true
-  ./tt/tt_tool.py --print-stats | tee build/tt12b/tt_print_stats.log || true
-  ./tt/tt_tool.py --print-cell-category | tee build/tt12b/tt_print_cell_category.log || true
+  "$PY_TT" ./tt/tt_tool.py --print-warnings | tee build/tt12b/tt_print_warnings.log || true
+  "$PY_TT" ./tt/tt_tool.py --print-stats | tee build/tt12b/tt_print_stats.log || true
+  "$PY_TT" ./tt/tt_tool.py --print-cell-category | tee build/tt12b/tt_print_cell_category.log || true
 else
   echo "[WARN] tt/tt_tool.py not found; skipping tt_tool printouts"
 fi
