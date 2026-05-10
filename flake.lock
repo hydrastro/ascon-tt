@@ -1,0 +1,44 @@
+{
+  "nodes": {
+    "ascon-rtl": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1778388772,
+        "narHash": "sha256-NGvZgP0UBqP4tnGvQBZJfDMJBbctuRpxerKoH/ef3GY=",
+        "owner": "hydrastro",
+        "repo": "ascon-rtl",
+        "rev": "361f62855321eaaa9fe0d0700622f15f177da377",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hydrastro",
+        "repo": "ascon-rtl",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1777954456,
+        "narHash": "sha256-hGdgeU2Nk87RAuZyYjyDjFL6LK7dAZN5RE9+hrDTkDU=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "549bd84d6279f9852cae6225e372cc67fb91a4c1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "ascon-rtl": "ascon-rtl",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

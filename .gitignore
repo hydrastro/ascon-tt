@@ -1,0 +1,26 @@
+# Build/sim products
+/build/
+/sim_build/
+*.vvp
+*.vcd
+*.fst
+
+# Python/cache
+__pycache__/
+.pytest_cache/
+
+# Local dependencies
+/deps/ascon-rtl/
+
+# Nix/direnv
+/result
+/.direnv/
+/.envrc
+
+# Patch/editor leftovers
+*.rej
+*.orig
+*.patch
+*.zip
+*.tar.gz
+*~

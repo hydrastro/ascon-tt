@@ -1,0 +1,17 @@
+# Tiny Tapeout project metadata.
+#
+# This is intentionally minimal. Before submitting, compare this with the
+# current official ttsky/ttihp template for your chosen shuttle.
+project:
+  title: "ASCON AEAD Serial Accelerator"
+  author: "a b"
+  discord: ""
+  description: "Full Ascon-AEAD128 accelerator with a Tiny Tapeout serial byte protocol"
+  language: "Verilog"
+  clock_hz: 25000000
+  tiles: "TBD"
+  top_module: "tt_um_ascon_aead"
+  source_files:
+    - "project.v"
+    - "ascon_tt_serial_frontend.v"
+    - "ascon_tt_aead_core_stub.v"
