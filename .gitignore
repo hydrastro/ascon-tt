@@ -24,3 +24,13 @@ __pycache__/
 *.zip
 *.tar.gz
 *~
+# Hardening/layout artifacts
+/runs/
+/artifacts/runs/
+!/artifacts/runs/.gitkeep
+*.gds
+*.def
+*.lef
+*.spef
+*.sdf
+*.mag

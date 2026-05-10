@@ -501,3 +501,35 @@ tt12-first-hardening-run:
 	$(MAKE) tt12-print-warnings
 	$(MAKE) tt12-print-stats
 	$(MAKE) tt12-print-cell-category
+
+
+# ---------------------------------------------------------------------------
+# TT-12A LAYOUT ARTIFACT POLICY
+# ---------------------------------------------------------------------------
+
+.PHONY: tt12a-artifact-policy-check tt12a-capture tt12a-manifest tt12a-dvc-status
+
+RUN_NAME ?= harden
+RUN_DIR ?= runs/wokwi
+ARTIFACT_DIR ?=
+
+tt12a-artifact-policy-check:
+	test -x tools/tt12a_capture_hardening_artifact.sh
+	test -x tools/tt12a_make_manifest.py
+	test -x tools/tt12a_compare_manifests.py
+	test -d artifacts/runs
+	test -d artifacts/manifests
+
+tt12a-capture:
+	tools/tt12a_capture_hardening_artifact.sh "$(RUN_NAME)" "$(RUN_DIR)"
+
+tt12a-manifest:
+	test -n "$(ARTIFACT_DIR)"
+	python3 tools/tt12a_make_manifest.py "$(ARTIFACT_DIR)"
+
+tt12a-dvc-status:
+	@if command -v dvc >/dev/null 2>&1; then \
+		dvc status; \
+	else \
+		echo "DVC not installed. Install/configure DVC only when ready to track generated layout artifacts."; \
+	fi
