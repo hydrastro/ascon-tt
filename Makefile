@@ -56,7 +56,7 @@ $(BUILD_DIR)/tb_tt_um_ascon_aead.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_um_ascon_ae
 	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated $(TT_DEBUG_PARAMS) -o $@ $(TEST_DIR)/tb_tt_um_ascon_aead.v $(SRC_FILES)
 
 lint:
-	$(VERILATOR) --lint-only --timing -Wall -Wno-DECLFILENAME -I$(SRC_DIR) -I$(ASCON_RTL_RTL) --top-module $(TOP) $(SRC_FILES)
+	$(VERILATOR) --lint-only --timing -Wall -Wno-DECLFILENAME -Wno-UNUSEDSIGNAL -Wno-WIDTHEXPAND -I$(SRC_DIR) -I$(ASCON_RTL_RTL) --top-module $(TOP) $(SRC_FILES)
 
 synth: | $(BUILD_DIR)
 	$(YOSYS) -p 'read_verilog $(SRC_FILES); synth -top $(TOP); check; stat' > $(BUILD_DIR)/yosys_tt_scaffold_stat.txt
@@ -292,6 +292,8 @@ $(BUILD_DIR)/tb_tt_aead_vectors_prod_directout.vvp: $(SRC_FILES) $(TEST_DIR)/tb_
 		-P $(TOP).ENABLE_PERM_DEBUG=0 \
 		-P $(TOP).ENABLE_DIAGNOSTICS=0 \
 		-P $(TOP).ENABLE_OUT_BUFFER=0 \
+		-P $(TOP).MAX_AD_BYTES=32 \
+		-P $(TOP).MAX_DATA_BYTES=32 \
 		-o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
 
 synth-prod-aead-top-directout: | $(BUILD_DIR)

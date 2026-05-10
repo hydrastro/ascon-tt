@@ -28,11 +28,11 @@ module tt_um_ascon_aead #(
 );
 
   ascon_tt_serial_frontend #(
-    .ENABLE_OUT_BUFFER(ENABLE_OUT_BUFFER),
-    .MAX_DATA_BYTES(MAX_DATA_BYTES),
-    .MAX_AD_BYTES(MAX_AD_BYTES),
+    .ENABLE_PERM_DEBUG(ENABLE_PERM_DEBUG),
     .ENABLE_DIAGNOSTICS(ENABLE_DIAGNOSTICS),
-    .ENABLE_PERM_DEBUG(ENABLE_PERM_DEBUG)
+    .ENABLE_OUT_BUFFER(ENABLE_OUT_BUFFER),
+    .MAX_AD_BYTES(MAX_AD_BYTES),
+    .MAX_DATA_BYTES(MAX_DATA_BYTES)
   ) u_frontend (
     .clk       (clk),
     .rst_n     (rst_n),

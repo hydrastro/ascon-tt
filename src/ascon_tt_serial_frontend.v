@@ -393,6 +393,12 @@ module ascon_tt_serial_frontend #(
   wire _unused_storage_reduce = ^{key_q, nonce_q, tag_q, tag_loaded_q, ad_loaded_q, data_loaded_q, result_loaded_q,
                                   ad_count_q[31:8], data_count_q[31:8], perm_done_seen_q};
   /* verilator lint_on UNUSED */
+  /* verilator lint_off UNUSED */
+  wire _unused_perm_debug_reduce = ^{perm_rounds_q, perm_clear_q, perm_load_valid_q,
+                                     perm_load_index_q, perm_load_byte_q,
+                                     perm_read_index_w};
+  /* verilator lint_on UNUSED */
+
 
     generate
     if (ENABLE_PERM_DEBUG != 0) begin : gen_perm_debug
@@ -414,8 +420,8 @@ module ascon_tt_serial_frontend #(
     end else begin : gen_no_perm_debug
       assign perm_busy_w = 1'b0;
       assign perm_done_w = 1'b0;
-      assign perm_read_byte_w = 1'b0;
-      assign perm_state_xor_w = 1'b0;
+      assign perm_read_byte_w = 8'd0;
+      assign perm_state_xor_w = 8'd0;
     end
   endgenerate
 
