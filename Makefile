@@ -395,3 +395,20 @@ tt9-release-check:
 	$(MAKE) synth
 	$(MAKE) prod-default-report
 	$(MAKE) tt9-audit
+
+
+# ---------------------------------------------------------------------------
+# TT-10 PHYSICAL-FLOW PREFLIGHT
+# ---------------------------------------------------------------------------
+
+.PHONY: tt10-flow-preflight tt10-release-check tt10-area-summary
+
+tt10-flow-preflight:
+	python3 tools/tt10_flow_preflight.py
+
+tt10-area-summary:
+	python3 tools/tt9_area_summary.py $(BUILD_DIR)/yosys_tt_scaffold_stat.txt
+
+tt10-release-check:
+	$(MAKE) tt9-release-check
+	$(MAKE) tt10-flow-preflight
