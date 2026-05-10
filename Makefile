@@ -682,3 +682,13 @@ tt13-area-report:
 
 tt14-area-model:
 	python3 tools/tt14_area_model.py | tee build/tt14/area_model.md
+
+
+# ---------------------------------------------------------------------------
+# TT-14B SHARED CORE EXTRACTION
+# ---------------------------------------------------------------------------
+
+.PHONY: tt14b-extract-shared-core-inputs
+
+tt14b-extract-shared-core-inputs:
+	python3 tools/tt14b_extract_shared_core_inputs.py
