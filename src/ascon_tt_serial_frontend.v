@@ -17,6 +17,7 @@ module ascon_tt_serial_frontend #(
   parameter integer ENABLE_DIAGNOSTICS = 1,
  
   parameter integer ENABLE_PERM_DEBUG = 1,
+  parameter integer USE_SHARED_AEAD = 0,
  
   parameter integer MAX_AD_BYTES   = 32,
   parameter integer MAX_DATA_BYTES = 32
@@ -426,7 +427,8 @@ module ascon_tt_serial_frontend #(
   endgenerate
 
   ascon_tt_aead_bridge #(
-    .ROUNDS_PER_CYCLE(1)
+    .ROUNDS_PER_CYCLE(1),
+    .USE_SHARED_AEAD(USE_SHARED_AEAD)
   ) u_aead_bridge (
     .clk            (clk),
     .rst_n          (rst_n),

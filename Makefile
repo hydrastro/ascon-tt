@@ -41,7 +41,9 @@ LOCAL_SRC_FILES := \
 	$(SRC_DIR)/ascon_tt_serial_frontend.v \
 	$(SRC_DIR)/ascon_tt_aead_core_stub.v \
 	$(SRC_DIR)/ascon_tt_perm_core.v \
-	$(SRC_DIR)/ascon_tt_aead_bridge.v
+	$(SRC_DIR)/ascon_tt_aead_bridge.v \
+	$(SRC_DIR)/ascon_tt_aead_bridge_dual.v \
+	$(SRC_DIR)/ascon_tt_aead_shared.v
 
 ASCON_RTL_FILES := \
 	$(ASCON_RTL_RTL)/ascon_round_comb.v \
@@ -742,3 +744,30 @@ tt14c-contract-check:
 	@test -f docs/tt14c_shared_core_schedule.md
 	@test -f tools/tt14c_source_map.py
 	@echo "TT-14C contract OK"
+
+
+# ---------------------------------------------------------------------------
+# TT-14D SHARED AEAD CORE
+# ---------------------------------------------------------------------------
+
+.PHONY: sim-aead-vectors-shared-prod-directout synth-prod-aead-shared-directout tt14d-shared-report
+
+sim-aead-vectors-shared-prod-directout: $(BUILD_DIR)/tb_tt_aead_vectors_shared_prod_directout.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_tt_aead_vectors_shared_prod_directout.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated \
+		-P tt_um_ascon_aead.USE_SHARED_AEAD=1 \
+		-P tt_um_ascon_aead.ENABLE_PERM_DEBUG=0 \
+		-P tt_um_ascon_aead.ENABLE_DIAGNOSTICS=0 \
+		-P tt_um_ascon_aead.ENABLE_OUT_BUFFER=0 \
+		-o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
+
+synth-prod-aead-shared-directout: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set USE_SHARED_AEAD 1 $(TOP); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); synth -top $(TOP); check; stat' > $(BUILD_DIR)/yosys_tt_prod_aead_shared_directout_stat.txt
+	cat $(BUILD_DIR)/yosys_tt_prod_aead_shared_directout_stat.txt
+
+tt14d-shared-report:
+	$(MAKE) sim-aead-vectors-shared-prod-directout
+	$(MAKE) synth-prod-aead-shared-directout
+	python3 tools/report_tt5_profiles.py build/yosys_tt_prod_aead_shared_directout_stat.txt build/yosys_tt_prod_aead_top_directout_stat.txt 2>/dev/null || true
