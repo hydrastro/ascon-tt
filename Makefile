@@ -672,3 +672,13 @@ tt12-env-check:
 
 tt13-area-report:
 	python3 tools/tt13_area_fit_report.py runs build | tee build/tt13/area_fit_report.md
+
+
+# ---------------------------------------------------------------------------
+# TT-14 SINGLE DATAPATH AREA MODEL
+# ---------------------------------------------------------------------------
+
+.PHONY: tt14-area-model
+
+tt14-area-model:
+	python3 tools/tt14_area_model.py | tee build/tt14/area_model.md
