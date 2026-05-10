@@ -484,25 +484,25 @@ tt11b-submodule-status:
 	git submodule status --recursive
 
 tt12-create-user-config: tt11b-tools-check
-	./$(TT_TOOLS_DIR)/tt_tool.py --create-user-config
+	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-user-config
 
 tt12-harden: tt11b-tools-check
-	./$(TT_TOOLS_DIR)/tt_tool.py --harden
+	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --harden
 
 tt12-print-warnings: tt11b-tools-check
-	./$(TT_TOOLS_DIR)/tt_tool.py --print-warnings
+	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-warnings
 
 tt12-print-stats: tt11b-tools-check
-	./$(TT_TOOLS_DIR)/tt_tool.py --print-stats
+	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-stats
 
 tt12-print-cell-category: tt11b-tools-check
-	./$(TT_TOOLS_DIR)/tt_tool.py --print-cell-category
+	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --print-cell-category
 
 tt12-create-submission: tt11b-tools-check
-	./$(TT_TOOLS_DIR)/tt_tool.py --create-tt-submission
+	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-tt-submission
 
 tt12-create-png: tt11b-tools-check
-	./$(TT_TOOLS_DIR)/tt_tool.py --create-png
+	$(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-png
 
 tt12-first-hardening-run:
 	$(MAKE) tt11-pre-gds-check
@@ -568,3 +568,34 @@ tt12b-first-hardening-run:
 	$(MAKE) tt12-create-user-config
 	$(MAKE) tt12-harden
 	$(MAKE) tt12b-after-harden
+
+
+# ---------------------------------------------------------------------------
+# TT-12 PYTHON ENVIRONMENT
+# ---------------------------------------------------------------------------
+
+.PHONY: tt12-python-reset tt12-python-venv tt12-python-check tt12-python-freeze
+
+PY_VENV ?= .venv
+PYTHON ?= python3
+PY_TT ?= $(PY_VENV)/bin/python
+
+tt12-python-reset:
+	rm -rf $(PY_VENV)
+
+tt12-python-venv:
+	test -f tt/requirements.txt
+	$(PYTHON) -m venv $(PY_VENV)
+	$(PY_TT) -m pip install --upgrade pip setuptools wheel
+	$(PY_TT) -m pip install -r tt/requirements.txt
+	$(PY_TT) -c "import chevron, yaml, git; print('tt python deps OK')"
+
+tt12-python-check:
+	test -x $(PY_TT)
+	$(PY_TT) -c "import chevron, yaml, git; import klayout.db as pya; import cairosvg; print('tt python deps + klayout + cairosvg OK')"
+	$(PY_TT) ./tt/tt_tool.py --help >/dev/null
+
+tt12-python-freeze:
+	test -x $(PY_VENV)/bin/python
+	$(PY_TT) -m pip freeze | sort > build/tt12_python_freeze.txt
+	cat build/tt12_python_freeze.txt
