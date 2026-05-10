@@ -12,6 +12,8 @@
 //   DATA bytes <= 32
 
 module ascon_tt_serial_frontend #(
+  parameter integer ENABLE_PERM_DEBUG = 1,
+ 
   parameter integer MAX_AD_BYTES   = 32,
   parameter integer MAX_DATA_BYTES = 32
 ) (
@@ -389,21 +391,30 @@ module ascon_tt_serial_frontend #(
                                   ad_count_q[31:8], data_count_q[31:8], perm_done_seen_q};
   /* verilator lint_on UNUSED */
 
-  ascon_tt_perm_core u_perm_core (
-    .clk          (clk),
-    .rst_n        (rst_n),
-    .clear_i      (perm_clear_q),
-    .load_valid_i (perm_load_valid_q),
-    .load_index_i (perm_load_index_q),
-    .load_byte_i  (perm_load_byte_q),
-    .read_index_i (perm_read_index_w),
-    .read_byte_o  (perm_read_byte_w),
-    .state_xor_o  (perm_state_xor_w),
-    .rounds_i     (perm_rounds_q),
-    .start_i      (perm_start_q),
-    .busy_o       (perm_busy_w),
-    .done_o       (perm_done_w)
-  );
+    generate
+    if (ENABLE_PERM_DEBUG != 0) begin : gen_perm_debug
+      ascon_tt_perm_core u_perm_core (
+          .clk          (clk),
+          .rst_n        (rst_n),
+          .clear_i      (perm_clear_q),
+          .load_valid_i (perm_load_valid_q),
+          .load_index_i (perm_load_index_q),
+          .load_byte_i  (perm_load_byte_q),
+          .read_index_i (perm_read_index_w),
+          .read_byte_o  (perm_read_byte_w),
+          .state_xor_o  (perm_state_xor_w),
+          .rounds_i     (perm_rounds_q),
+          .start_i      (perm_start_q),
+          .busy_o       (perm_busy_w),
+          .done_o       (perm_done_w)
+        );
+    end else begin : gen_no_perm_debug
+      assign perm_busy_w = 1'b0;
+      assign perm_done_w = 1'b0;
+      assign perm_read_byte_w = 1'b0;
+      assign perm_state_xor_w = 1'b0;
+    end
+  endgenerate
 
   ascon_tt_aead_bridge #(
     .ROUNDS_PER_CYCLE(1)

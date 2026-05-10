@@ -127,7 +127,7 @@ tt5-dec-only: $(TT5_DIR)/dec_only.txt
 tt5-perm-debug: $(TT5_DIR)/perm_debug.txt
 tt5-perm-core: $(TT5_DIR)/perm_core.txt
 
-tt5-profiles: tt5-full-debug tt5-full-aead-bridge tt5-enc-only tt5-dec-only tt5-perm-debug tt5-perm-core
+tt5-profiles: tt5-full-debug tt5-full-aead-bridge tt5-enc-only tt5-dec-only tt5-perm-debug tt5-perm-core $(TT5_DIR)/full_aead_top.txt
 	$(MAKE) tt5-report
 
 tt5-report:
@@ -150,3 +150,28 @@ $(TT5_DIR)/perm_debug.txt: $(SRC_DIR)/ascon_tt_perm_core.v $(ASCON_RTL_RTL)/asco
 
 $(TT5_DIR)/perm_core.txt: $(ASCON_RTL_RTL)/ascon_round_comb.v $(ASCON_RTL_RTL)/ascon_perm_unrolled.v | $(TT5_DIR)
 	$(YOSYS) -p 'read_verilog $(ASCON_RTL_RTL)/ascon_round_comb.v $(ASCON_RTL_RTL)/ascon_perm_unrolled.v; synth -top ascon_perm_unrolled; check; stat' > $@
+
+
+# ---------------------------------------------------------------------------
+# TT-6 NO-PERM FULL-AEAD TOP PROFILE
+# ---------------------------------------------------------------------------
+
+.PHONY: sim-aead-vectors-noperm synth-full-aead-top tt6-report
+
+sim-aead-vectors-noperm: $(BUILD_DIR)/tb_tt_aead_vectors_noperm.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_tt_aead_vectors_noperm.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated \
+		-P $(TOP).ENABLE_PERM_DEBUG=0 \
+		-o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
+
+synth-full-aead-top: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); synth -top $(TOP); check; stat' > $(BUILD_DIR)/yosys_tt_full_aead_top_stat.txt
+	cat $(BUILD_DIR)/yosys_tt_full_aead_top_stat.txt
+
+$(TT5_DIR)/full_aead_top.txt: $(SRC_FILES) | $(TT5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); synth -top $(TOP); check; stat' > $@
+
+tt6-report: $(TT5_DIR)/full_debug.txt $(TT5_DIR)/full_aead_top.txt $(TT5_DIR)/full_aead_bridge.txt $(TT5_DIR)/perm_debug.txt $(TT5_DIR)/perm_core.txt
+	python3 tools/report_tt5_profiles.py $^
