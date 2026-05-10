@@ -34,3 +34,11 @@ __pycache__/
 *.spef
 *.sdf
 *.mag
+# Local build/simulation products
+*.log
+*.rpt
+# Patch/archive leftovers
+# Layout/hardening artifacts
+/artifacts/runs/*
+!/artifacts/manifests/
+!/artifacts/manifests/.gitkeep

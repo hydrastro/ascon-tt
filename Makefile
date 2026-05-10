@@ -66,6 +66,7 @@ synth: | $(BUILD_DIR)
 	cat $(BUILD_DIR)/yosys_tt_scaffold_stat.txt
 
 sanity:
+	@test -f .gitignore || { echo "ERROR: missing .gitignore"; exit 1; }
 	@test -f info.yaml || { echo "ERROR: missing info.yaml"; exit 1; }
 	@test -f src/project.v || { echo "ERROR: missing src/project.v"; exit 1; }
 	@test -f src/ascon_tt_perm_core.v || { echo "ERROR: missing src/ascon_tt_perm_core.v"; exit 1; }
@@ -467,7 +468,17 @@ tt11-pre-gds-check:
 tt11b-tools-check:
 	test -f $(TT_TOOLS_DIR)/tt_tool.py
 	test -f $(TT_TOOLS_DIR)/requirements.txt
-	git submodule status --recursive $(TT_TOOLS_DIR)
+	@if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then \
+		if git config --file .gitmodules --get-regexp 'submodule\.$(TT_TOOLS_DIR)\.path' >/dev/null 2>&1; then \
+			git submodule status --recursive $(TT_TOOLS_DIR); \
+		else \
+			echo "ERROR: $(TT_TOOLS_DIR)/ exists but is not recorded as a submodule in .gitmodules"; \
+			echo "Run fix_tt12_repo_hygiene_and_tools.sh from the real Git repo, or add the submodule manually."; \
+			exit 1; \
+		fi; \
+	else \
+		echo "WARN: not a Git repo; checked $(TT_TOOLS_DIR)/ files only"; \
+	fi
 
 tt11b-submodule-status:
 	git submodule status --recursive
