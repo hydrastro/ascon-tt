@@ -78,6 +78,8 @@ sanity:
 	@test -f info.yaml
 	@test -f src/project.v
 	@test -f src/config.json
+	@test -f src/ascon_tt_serial_frontend.v
+	@test -f src/ascon_tt_aead_bridge.v
 	@test -f src/ascon_tt_perm_core.v
 	@test -f docs/info.md
 	@test -f docs/architecture.md
@@ -87,6 +89,7 @@ sanity:
 		-path ./.git -prune -o \
 		-path ./build -prune -o \
 		-path ./.venv -prune -o \
+		-path ./.ttsetup -prune -o \
 		-path ./tt -prune -o \
 		-path ./runs -prune -o \
 		-path ./artifacts/runs -prune -o \

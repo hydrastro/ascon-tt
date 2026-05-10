@@ -41,3 +41,6 @@ __pycache__/
 # Tiny Tapeout support tools caches only; do not ignore tt/ itself if it is a submodule
 tt/__pycache__/
 tt/**/*.pyc
+
+# Local PDK/cache installed by hardening tools
+.ttsetup/
