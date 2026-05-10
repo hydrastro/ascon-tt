@@ -371,3 +371,26 @@ debug-regression:
 
 prod-default-report:
 	python3 tools/report_tt5_profiles.py $(BUILD_DIR)/yosys_tt_scaffold_stat.txt
+
+
+# ---------------------------------------------------------------------------
+# TT-9 REPO HARDENING / RELEASE CHECKS
+# ---------------------------------------------------------------------------
+
+.PHONY: tt9-audit tt9-area-summary tt9-release-check
+
+tt9-audit:
+	python3 tools/tt9_audit.py
+
+tt9-area-summary:
+	python3 tools/tt9_area_summary.py $(BUILD_DIR)/yosys_tt_scaffold_stat.txt
+
+tt9-release-check:
+	$(MAKE) clean
+	$(MAKE) sanity
+	$(MAKE) debug-regression
+	$(MAKE) sim-aead-vectors-prod-directout
+	$(MAKE) lint
+	$(MAKE) synth
+	$(MAKE) prod-default-report
+	$(MAKE) tt9-audit
