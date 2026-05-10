@@ -69,3 +69,15 @@ sim-perm-oracle: $(BUILD_DIR)/tb_tt_perm_oracle.vvp
 
 $(BUILD_DIR)/tb_tt_perm_oracle.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_perm_oracle.v | $(BUILD_DIR)
 	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -o $@ $(TEST_DIR)/tb_tt_perm_oracle.v $(SRC_FILES)
+
+# ---------------------------------------------------------------------------
+# TT-4A JOB BUFFER TEST
+# ---------------------------------------------------------------------------
+
+.PHONY: sim-job-buffers
+
+sim-job-buffers: $(BUILD_DIR)/tb_tt_job_buffers.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_tt_job_buffers.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_job_buffers.v | $(BUILD_DIR)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -o $@ $(TEST_DIR)/tb_tt_job_buffers.v $(SRC_FILES)
