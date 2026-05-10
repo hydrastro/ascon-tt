@@ -12,6 +12,21 @@ VVP ?= vvp
 VERILATOR ?= verilator
 YOSYS ?= yosys
 
+TT_DEBUG_PARAMS := \
+	-P $(TOP).ENABLE_PERM_DEBUG=1 \
+	-P $(TOP).ENABLE_DIAGNOSTICS=1 \
+	-P $(TOP).ENABLE_OUT_BUFFER=1 \
+	-P $(TOP).MAX_AD_BYTES=32 \
+	-P $(TOP).MAX_DATA_BYTES=32
+
+TT_PROD_PARAMS := \
+	-P $(TOP).ENABLE_PERM_DEBUG=0 \
+	-P $(TOP).ENABLE_DIAGNOSTICS=0 \
+	-P $(TOP).ENABLE_OUT_BUFFER=0 \
+	-P $(TOP).MAX_AD_BYTES=32 \
+	-P $(TOP).MAX_DATA_BYTES=32
+
+
 LOCAL_SRC_FILES := \
 	$(SRC_DIR)/project.v \
 	$(SRC_DIR)/ascon_tt_serial_frontend.v \
@@ -38,7 +53,7 @@ sim: $(BUILD_DIR)/tb_tt_um_ascon_aead.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_um_ascon_aead.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_um_ascon_aead.v | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated -o $@ $(TEST_DIR)/tb_tt_um_ascon_aead.v $(SRC_FILES)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated $(TT_DEBUG_PARAMS) -o $@ $(TEST_DIR)/tb_tt_um_ascon_aead.v $(SRC_FILES)
 
 lint:
 	$(VERILATOR) --lint-only --timing -Wall -Wno-DECLFILENAME -I$(SRC_DIR) -I$(ASCON_RTL_RTL) --top-module $(TOP) $(SRC_FILES)
@@ -77,7 +92,7 @@ sim-perm-oracle: $(BUILD_DIR)/tb_tt_perm_oracle.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_perm_oracle.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_perm_oracle.v | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated -o $@ $(TEST_DIR)/tb_tt_perm_oracle.v $(SRC_FILES)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated $(TT_DEBUG_PARAMS) -o $@ $(TEST_DIR)/tb_tt_perm_oracle.v $(SRC_FILES)
 
 # ---------------------------------------------------------------------------
 # TT-4A JOB BUFFER TEST
@@ -89,7 +104,7 @@ sim-job-buffers: $(BUILD_DIR)/tb_tt_job_buffers.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_job_buffers.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_job_buffers.v | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated -o $@ $(TEST_DIR)/tb_tt_job_buffers.v $(SRC_FILES)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated $(TT_DEBUG_PARAMS) -o $@ $(TEST_DIR)/tb_tt_job_buffers.v $(SRC_FILES)
 
 # ---------------------------------------------------------------------------
 # TT-4B FULL AEAD VECTOR TEST
@@ -334,3 +349,23 @@ $(TT7A5_DIR)/prod_directout_ad8_msg32.txt: $(SRC_FILES) | $(TT7A5_DIR)
 
 $(TT7A5_DIR)/prod_directout_ad32_msg8.txt: $(SRC_FILES) | $(TT7A5_DIR)
 	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); chparam -set MAX_AD_BYTES 32 $(TOP); chparam -set MAX_DATA_BYTES 8 $(TOP); synth -top $(TOP); check; stat' > $@
+
+
+# ---------------------------------------------------------------------------
+# TT-8 PRODUCTION-DEFAULT CHECKS
+# ---------------------------------------------------------------------------
+
+.PHONY: prod-default-check debug-regression prod-default-report
+
+prod-default-check:
+	$(MAKE) sanity
+	$(MAKE) sim-aead-vectors-prod-directout
+	$(MAKE) synth
+
+debug-regression:
+	$(MAKE) sim
+	$(MAKE) sim-perm-oracle
+	$(MAKE) sim-job-buffers
+
+prod-default-report:
+	python3 tools/report_tt5_profiles.py $(BUILD_DIR)/yosys_tt_scaffold_stat.txt

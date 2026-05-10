@@ -9,14 +9,14 @@
 
 /* verilator lint_off DECLFILENAME */
 module tt_um_ascon_aead #(
-  parameter integer ENABLE_OUT_BUFFER = 1,
+  parameter integer ENABLE_OUT_BUFFER = 0,
  
   parameter integer MAX_DATA_BYTES = 32,
  
   parameter integer MAX_AD_BYTES = 32,
  
-  parameter integer ENABLE_DIAGNOSTICS = 1,
- parameter integer ENABLE_PERM_DEBUG = 1) (
+  parameter integer ENABLE_DIAGNOSTICS = 0,
+ parameter integer ENABLE_PERM_DEBUG = 0) (
   input  wire [7:0] ui_in,    // Dedicated inputs
   output wire [7:0] uo_out,   // Dedicated outputs
   input  wire [7:0] uio_in,   // Bidirectional IO input path
