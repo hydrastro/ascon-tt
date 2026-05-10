@@ -692,3 +692,37 @@ tt14-area-model:
 
 tt14b-extract-shared-core-inputs:
 	python3 tools/tt14b_extract_shared_core_inputs.py
+
+
+# ---------------------------------------------------------------------------
+# REPO DOCUMENTATION HELP
+# ---------------------------------------------------------------------------
+
+.PHONY: help list-targets repo-status
+
+help:
+	@echo "Common targets:"
+	@echo "  make sanity                  - repo hygiene checks"
+	@echo "  make lint                    - Verilator lint"
+	@echo "  make synth                   - Yosys synthesis of production top"
+	@echo "  make debug-regression        - debug simulation tests"
+	@echo "  make sim-aead-vectors-prod-directout - full AEAD vector sim for production profile"
+	@echo "  make tt5-profiles            - synthesis profile matrix"
+	@echo "  make tt13-area-report        - hardening area-fit report"
+	@echo "  make list-targets            - table of all Makefile targets"
+	@echo "  make repo-status             - concise git/source status"
+	@echo ""
+	@echo "Read README.md and docs/makefile_reference.md before changing flow targets."
+
+list-targets:
+	python3 tools/list_make_targets.py Makefile
+
+repo-status:
+	@echo "== git status =="
+	@git status --short || true
+	@echo ""
+	@echo "== tracked docs =="
+	@find docs -maxdepth 1 -type f | sort
+	@echo ""
+	@echo "== generated dirs =="
+	@find build runs sim/generated artifacts/runs -maxdepth 2 2>/dev/null | sort | head -80 || true

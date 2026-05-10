@@ -1,32 +1,29 @@
-# Build/sim products
+# Local build/simulation products
 /build/
-/sim_build/
+/runs/
 *.vvp
 *.vcd
 *.fst
 
-# Python/cache
+# Python local env/cache
+.venv/
 __pycache__/
+*.pyc
 .pytest_cache/
+.mypy_cache/
 
-# Local dependencies
-/deps/ascon-rtl/
+# Generated local vector headers
+/sim/generated/
 
-# Nix/direnv
-/result
-/.direnv/
-/.envrc
-
-# Patch/editor leftovers
+# Patch/archive leftovers
 *.rej
 *.orig
 *.patch
 *.zip
 *.tar.gz
-*~
+
 # Hardening/layout artifacts
-/runs/
-/artifacts/runs/
+/artifacts/runs/*
 !/artifacts/runs/.gitkeep
 *.gds
 *.def
@@ -34,15 +31,13 @@ __pycache__/
 *.spef
 *.sdf
 *.mag
-# Local build/simulation products
-*.log
-*.rpt
-# Patch/archive leftovers
-# Layout/hardening artifacts
-/artifacts/runs/*
+*.spice
+*.spef.gz
+
+# Keep artifact manifests trackable
 !/artifacts/manifests/
 !/artifacts/manifests/.gitkeep
-.venv/
-*.pyc
-.mypy_cache/
-/sim/generated/
+
+# Tiny Tapeout support tools caches only; do not ignore tt/ itself if it is a submodule
+tt/__pycache__/
+tt/**/*.pyc
