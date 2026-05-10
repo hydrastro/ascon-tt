@@ -57,3 +57,15 @@ sanity:
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f *.vvp *.vcd *.fst
+
+# ---------------------------------------------------------------------------
+# TT-3.1 PERMUTATION ORACLE TEST
+# ---------------------------------------------------------------------------
+
+.PHONY: sim-perm-oracle
+
+sim-perm-oracle: $(BUILD_DIR)/tb_tt_perm_oracle.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_tt_perm_oracle.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_perm_oracle.v | $(BUILD_DIR)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -o $@ $(TEST_DIR)/tb_tt_perm_oracle.v $(SRC_FILES)
