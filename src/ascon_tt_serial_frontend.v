@@ -12,6 +12,8 @@
 //   DATA bytes <= 32
 
 module ascon_tt_serial_frontend #(
+  parameter integer ENABLE_DIAGNOSTICS = 1,
+ 
   parameter integer ENABLE_PERM_DEBUG = 1,
  
   parameter integer MAX_AD_BYTES   = 32,
@@ -127,9 +129,8 @@ module ascon_tt_serial_frontend #(
   wire in_fire_w  = in_valid_i && in_ready_o;
   wire out_fire_w = out_valid_o && out_ready_i;
 
-  wire [5:0] perm_read_index_w =
-    (in_fire_w && (state_q == ST_RECV) && (active_cmd_q == CMD_READ_STATE_BYTE)) ?
-    cmd_data_i[5:0] : perm_read_index_q;
+  wire [5:0] perm_read_index_w = ((ENABLE_PERM_DEBUG != 0) && in_fire_w && (state_q == ST_RECV) && (active_cmd_q == CMD_READ_STATE_BYTE)) ?
+                                cmd_data_i[5:0] : perm_read_index_q;
 
   wire [7:0] perm_read_byte_w;
   wire [7:0] perm_state_xor_w;
@@ -174,7 +175,7 @@ module ascon_tt_serial_frontend #(
   };
 
   assign in_ready_o = ena_i && !out_valid_o && !perm_start_q && !aead_start_q;
-  assign busy_o = (state_q != ST_IDLE) || perm_busy_w || aead_busy_w;
+  assign busy_o = (state_q != ST_IDLE) || ((ENABLE_PERM_DEBUG != 0) && perm_busy_w) || aead_busy_w;
 
   integer k;
 
@@ -451,7 +452,7 @@ module ascon_tt_serial_frontend #(
       aead_start_q <= 1'b0;
       aead_clear_q <= 1'b0;
 
-      if (perm_done_w) begin
+      if ((ENABLE_PERM_DEBUG != 0) && perm_done_w) begin
         done_o <= 1'b1;
         perm_done_seen_q <= 1'b1;
       end
@@ -560,28 +561,96 @@ module ascon_tt_serial_frontend #(
               CMD_READ_OUT_BYTE: begin active_cmd_q <= CMD_READ_OUT_BYTE; remaining_q <= 32'd1; byte_idx_q <= 8'd0; state_q <= ST_RECV; end
               CMD_READ_RESULT_TAG: begin active_cmd_q <= CMD_READ_RESULT_TAG; remaining_q <= 32'd1; byte_idx_q <= 8'd0; state_q <= ST_RECV; end
 
-              CMD_READ_MODE:       issue_response({7'd0, mode_decrypt_q});
-              CMD_READ_AD_COUNT:   issue_response(ad_count_q[7:0]);
-              CMD_READ_DATA_COUNT: issue_response(data_count_q[7:0]);
-              CMD_READ_KEY_XOR:    issue_response(key_xor_q);
-              CMD_READ_NONCE_XOR:  issue_response(nonce_xor_q);
-              CMD_READ_TAG_XOR:    issue_response(tag_xor_q);
-              CMD_READ_AD_XOR:     issue_response(ad_xor_q);
-              CMD_READ_DATA_XOR:   issue_response(data_xor_q);
-              CMD_READ_OUT_XOR:    issue_response(out_xor_q);
-              CMD_READ_RESULT_TAG_XOR: issue_response(result_tag_xor_q);
+              CMD_READ_MODE: begin // TT7A2_DIAGNOSTICS_GUARD
 
-              CMD_LOAD_STATE: begin
-                active_cmd_q <= CMD_LOAD_STATE; remaining_q <= 32'd40; byte_idx_q <= 8'd0;
-                perm_clear_q <= 1'b1; perm_done_seen_q <= 1'b0; done_o <= 1'b0; state_q <= ST_RECV;
+                if (ENABLE_DIAGNOSTICS != 0) issue_response({7'd0, mode_decrypt_q});
+
+                else issue_response(8'he5);
+
               end
-              CMD_SET_ROUNDS: begin active_cmd_q <= CMD_SET_ROUNDS; remaining_q <= 32'd1; byte_idx_q <= 8'd0; state_q <= ST_RECV; end
-              CMD_START_PERM: begin
-                if (perm_busy_w) begin error_o <= 1'b1; issue_response(8'he6); end
-                else begin done_o <= 1'b0; auth_ok_o <= 1'b0; error_o <= 1'b0; perm_done_seen_q <= 1'b0; perm_start_q <= 1'b1; issue_response(8'hd6); end
+              CMD_READ_AD_COUNT: begin // TT7A2_DIAGNOSTICS_GUARD
+                if (ENABLE_DIAGNOSTICS != 0) issue_response(ad_count_q[7:0]);
+                else issue_response(8'he5);
               end
-              CMD_READ_STATE_XOR: issue_response(perm_state_xor_w);
-              CMD_READ_STATE_BYTE: begin active_cmd_q <= CMD_READ_STATE_BYTE; remaining_q <= 32'd1; byte_idx_q <= 8'd0; state_q <= ST_RECV; end
+              CMD_READ_DATA_COUNT: begin // TT7A2_DIAGNOSTICS_GUARD
+                if (ENABLE_DIAGNOSTICS != 0) issue_response(data_count_q[7:0]);
+                else issue_response(8'he5);
+              end
+              CMD_READ_KEY_XOR: begin // TT7A2_DIAGNOSTICS_GUARD
+                if (ENABLE_DIAGNOSTICS != 0) issue_response(key_xor_q);
+                else issue_response(8'he5);
+              end
+              CMD_READ_NONCE_XOR: begin // TT7A2_DIAGNOSTICS_GUARD
+                if (ENABLE_DIAGNOSTICS != 0) issue_response(nonce_xor_q);
+                else issue_response(8'he5);
+              end
+              CMD_READ_TAG_XOR: begin // TT7A2_DIAGNOSTICS_GUARD
+                if (ENABLE_DIAGNOSTICS != 0) issue_response(tag_xor_q);
+                else issue_response(8'he5);
+              end
+              CMD_READ_AD_XOR: begin // TT7A2_DIAGNOSTICS_GUARD
+                if (ENABLE_DIAGNOSTICS != 0) issue_response(ad_xor_q);
+                else issue_response(8'he5);
+              end
+              CMD_READ_DATA_XOR: begin // TT7A2_DIAGNOSTICS_GUARD
+                if (ENABLE_DIAGNOSTICS != 0) issue_response(data_xor_q);
+                else issue_response(8'he5);
+              end
+              CMD_READ_OUT_XOR: begin // TT7A2_DIAGNOSTICS_GUARD
+                if (ENABLE_DIAGNOSTICS != 0) issue_response(out_xor_q);
+                else issue_response(8'he5);
+              end
+              CMD_READ_RESULT_TAG_XOR: begin // TT7A2_DIAGNOSTICS_GUARD
+                if (ENABLE_DIAGNOSTICS != 0) issue_response(result_tag_xor_q);
+                else issue_response(8'he5);
+              end
+              CMD_LOAD_STATE: begin // TT7A_PERM_DEBUG_GUARD
+
+                if (ENABLE_PERM_DEBUG != 0) begin
+
+                                  active_cmd_q <= CMD_LOAD_STATE; remaining_q <= 32'd40; byte_idx_q <= 8'd0;
+
+                                  perm_clear_q <= 1'b1; perm_done_seen_q <= 1'b0; done_o <= 1'b0; state_q <= ST_RECV;
+
+                                
+
+                end else begin
+
+                  issue_response(8'he4);
+
+                end
+
+              end
+              CMD_SET_ROUNDS: begin // TT7A_PERM_DEBUG_GUARD
+                if (ENABLE_PERM_DEBUG != 0) begin
+                   active_cmd_q <= CMD_SET_ROUNDS; remaining_q <= 32'd1; byte_idx_q <= 8'd0; state_q <= ST_RECV; 
+                end else begin
+                  issue_response(8'he4);
+                end
+              end
+              CMD_START_PERM: begin // TT7A_PERM_DEBUG_GUARD
+                if (ENABLE_PERM_DEBUG != 0) begin
+                                  if (perm_busy_w) begin error_o <= 1'b1; issue_response(8'he6); end
+                                  else begin done_o <= 1'b0; auth_ok_o <= 1'b0; error_o <= 1'b0; perm_done_seen_q <= 1'b0; perm_start_q <= 1'b1; issue_response(8'hd6); end
+                                
+                end else begin
+                  issue_response(8'he4);
+                end
+              end
+              CMD_READ_STATE_XOR: begin // TT7A_PERM_DEBUG_GUARD
+                if (ENABLE_PERM_DEBUG != 0) begin
+                  issue_response(perm_state_xor_w);
+                end else begin
+                  issue_response(8'he4);
+                end
+              end
+              CMD_READ_STATE_BYTE: begin // TT7A_PERM_DEBUG_GUARD
+                if (ENABLE_PERM_DEBUG != 0) begin
+                   active_cmd_q <= CMD_READ_STATE_BYTE; remaining_q <= 32'd1; byte_idx_q <= 8'd0; state_q <= ST_RECV; 
+                end else begin
+                  issue_response(8'he4);
+                end
+              end
 
               default: begin error_o <= 1'b1; issue_response(8'hee); end
             endcase
@@ -633,18 +702,34 @@ module ascon_tt_serial_frontend #(
                 if (cmd_data_i < 8'd16) issue_response(extract_byte128(result_tag_q, cmd_data_i[3:0]));
                 else begin error_o <= 1'b1; issue_response(8'hec); end
               end
-              CMD_LOAD_STATE: begin
-                perm_load_valid_q <= 1'b1;
-                perm_load_index_q <= byte_idx_q[5:0];
-                perm_load_byte_q <= cmd_data_i;
-                if (remaining_q == 32'd1) issue_response(8'hc6);
+              CMD_LOAD_STATE: begin // TT7A_PERM_DEBUG_GUARD
+                if (ENABLE_PERM_DEBUG != 0) begin
+                                  perm_load_valid_q <= 1'b1;
+                                  perm_load_index_q <= byte_idx_q[5:0];
+                                  perm_load_byte_q <= cmd_data_i;
+                                  if (remaining_q == 32'd1) issue_response(8'hc6);
+                                
+                end else begin
+                  issue_response(8'he4);
+                end
               end
-              CMD_SET_ROUNDS: begin
-                if ((cmd_data_i == 8'd6) || (cmd_data_i == 8'd8) || (cmd_data_i == 8'd12)) begin
-                  perm_rounds_q <= cmd_data_i[3:0]; issue_response(8'ha6);
-                end else begin error_o <= 1'b1; issue_response(8'hea); end
+              CMD_SET_ROUNDS: begin // TT7A_PERM_DEBUG_GUARD
+                if (ENABLE_PERM_DEBUG != 0) begin
+                                  if ((cmd_data_i == 8'd6) || (cmd_data_i == 8'd8) || (cmd_data_i == 8'd12)) begin
+                                    perm_rounds_q <= cmd_data_i[3:0]; issue_response(8'ha6);
+                                  end else begin error_o <= 1'b1; issue_response(8'hea); end
+                                
+                end else begin
+                  issue_response(8'he4);
+                end
               end
-              CMD_READ_STATE_BYTE: begin perm_read_index_q <= cmd_data_i[5:0]; issue_response(perm_read_byte_w); end
+              CMD_READ_STATE_BYTE: begin // TT7A_PERM_DEBUG_GUARD
+                if (ENABLE_PERM_DEBUG != 0) begin
+                   perm_read_index_q <= cmd_data_i[5:0]; issue_response(perm_read_byte_w); 
+                end else begin
+                  issue_response(8'he4);
+                end
+              end
               default: begin error_o <= 1'b1; issue_response(8'hef); end
             endcase
 

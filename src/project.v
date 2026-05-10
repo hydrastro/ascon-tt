@@ -8,7 +8,9 @@
 // ascon_tt_serial_frontend.v and the full AEAD engine will be added behind it.
 
 /* verilator lint_off DECLFILENAME */
-module tt_um_ascon_aead #(parameter integer ENABLE_PERM_DEBUG = 1) (
+module tt_um_ascon_aead #(
+  parameter integer ENABLE_DIAGNOSTICS = 1,
+ parameter integer ENABLE_PERM_DEBUG = 1) (
   input  wire [7:0] ui_in,    // Dedicated inputs
   output wire [7:0] uo_out,   // Dedicated outputs
   input  wire [7:0] uio_in,   // Bidirectional IO input path
@@ -20,6 +22,7 @@ module tt_um_ascon_aead #(parameter integer ENABLE_PERM_DEBUG = 1) (
 );
 
   ascon_tt_serial_frontend #(
+    .ENABLE_DIAGNOSTICS(ENABLE_DIAGNOSTICS),
     .ENABLE_PERM_DEBUG(ENABLE_PERM_DEBUG)
   ) u_frontend (
     .clk       (clk),

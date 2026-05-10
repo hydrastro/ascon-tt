@@ -127,7 +127,7 @@ tt5-dec-only: $(TT5_DIR)/dec_only.txt
 tt5-perm-debug: $(TT5_DIR)/perm_debug.txt
 tt5-perm-core: $(TT5_DIR)/perm_core.txt
 
-tt5-profiles: tt5-full-debug tt5-full-aead-bridge tt5-enc-only tt5-dec-only tt5-perm-debug tt5-perm-core $(TT5_DIR)/full_aead_top.txt
+tt5-profiles: tt5-full-debug tt5-full-aead-bridge tt5-enc-only tt5-dec-only tt5-perm-debug tt5-perm-core $(TT5_DIR)/full_aead_top.txt $(TT5_DIR)/prod_aead_top.txt
 	$(MAKE) tt5-report
 
 tt5-report:
@@ -175,3 +175,48 @@ $(TT5_DIR)/full_aead_top.txt: $(SRC_FILES) | $(TT5_DIR)
 
 tt6-report: $(TT5_DIR)/full_debug.txt $(TT5_DIR)/full_aead_top.txt $(TT5_DIR)/full_aead_bridge.txt $(TT5_DIR)/perm_debug.txt $(TT5_DIR)/perm_core.txt
 	python3 tools/report_tt5_profiles.py $^
+
+
+# ---------------------------------------------------------------------------
+# TT-7A SLIM NO-PERM FRONTEND CHECKS
+# ---------------------------------------------------------------------------
+
+.PHONY: tt7a-check tt7a-report
+
+tt7a-check:
+	$(MAKE) sim-aead-vectors-noperm
+	$(MAKE) synth-full-aead-top
+	$(MAKE) tt6-report
+
+tt7a-report: tt6-report
+
+
+# ---------------------------------------------------------------------------
+# TT-7A.2 PRODUCTION DIAGNOSTICS-OFF PROFILE
+# ---------------------------------------------------------------------------
+
+.PHONY: sim-aead-vectors-prod synth-prod-aead-top tt7a2-report tt7a2-check
+
+sim-aead-vectors-prod: $(BUILD_DIR)/tb_tt_aead_vectors_prod.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_tt_aead_vectors_prod.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated \
+		-P $(TOP).ENABLE_PERM_DEBUG=0 \
+		-P $(TOP).ENABLE_DIAGNOSTICS=0 \
+		-o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
+
+synth-prod-aead-top: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); synth -top $(TOP); check; stat' > $(BUILD_DIR)/yosys_tt_prod_aead_top_stat.txt
+	cat $(BUILD_DIR)/yosys_tt_prod_aead_top_stat.txt
+
+$(TT5_DIR)/prod_aead_top.txt: $(SRC_FILES) | $(TT5_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); synth -top $(TOP); check; stat' > $@
+
+tt7a2-report: $(TT5_DIR)/full_debug.txt $(TT5_DIR)/full_aead_top.txt $(TT5_DIR)/prod_aead_top.txt $(TT5_DIR)/full_aead_bridge.txt $(TT5_DIR)/perm_debug.txt $(TT5_DIR)/perm_core.txt
+	python3 tools/report_tt5_profiles.py $^
+
+tt7a2-check:
+	$(MAKE) sim-aead-vectors-prod
+	$(MAKE) synth-prod-aead-top
+	$(MAKE) tt7a2-report
