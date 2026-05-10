@@ -15,3 +15,5 @@ project:
     - "project.v"
     - "ascon_tt_serial_frontend.v"
     - "ascon_tt_aead_core_stub.v"
+    - "ascon_tt_perm_core.v"
+    - "ascon_tt_aead_bridge.v"

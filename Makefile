@@ -5,6 +5,7 @@ BUILD_DIR := build
 
 ASCON_RTL ?= ../ascon-rtl
 ASCON_RTL_RTL := $(ASCON_RTL)/rtl
+ASCON_RTL_VEC_AD := $(ASCON_RTL)/sim/generated/ascon_aead128_ad_vectors.vh
 
 IVERILOG ?= iverilog
 VVP ?= vvp
@@ -15,11 +16,14 @@ LOCAL_SRC_FILES := \
 	$(SRC_DIR)/project.v \
 	$(SRC_DIR)/ascon_tt_serial_frontend.v \
 	$(SRC_DIR)/ascon_tt_aead_core_stub.v \
-	$(SRC_DIR)/ascon_tt_perm_core.v
+	$(SRC_DIR)/ascon_tt_perm_core.v \
+	$(SRC_DIR)/ascon_tt_aead_bridge.v
 
 ASCON_RTL_FILES := \
 	$(ASCON_RTL_RTL)/ascon_round_comb.v \
-	$(ASCON_RTL_RTL)/ascon_perm_unrolled.v
+	$(ASCON_RTL_RTL)/ascon_perm_unrolled.v \
+	$(ASCON_RTL_RTL)/ascon_aead128_enc_ad.v \
+	$(ASCON_RTL_RTL)/ascon_aead128_dec_ad.v
 
 SRC_FILES := $(LOCAL_SRC_FILES) $(ASCON_RTL_FILES)
 
@@ -34,7 +38,7 @@ sim: $(BUILD_DIR)/tb_tt_um_ascon_aead.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_um_ascon_aead.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_um_ascon_aead.v | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -o $@ $(TEST_DIR)/tb_tt_um_ascon_aead.v $(SRC_FILES)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated -o $@ $(TEST_DIR)/tb_tt_um_ascon_aead.v $(SRC_FILES)
 
 lint:
 	$(VERILATOR) --lint-only --timing -Wall -Wno-DECLFILENAME -I$(SRC_DIR) -I$(ASCON_RTL_RTL) --top-module $(TOP) $(SRC_FILES)
@@ -68,7 +72,7 @@ sim-perm-oracle: $(BUILD_DIR)/tb_tt_perm_oracle.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_perm_oracle.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_perm_oracle.v | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -o $@ $(TEST_DIR)/tb_tt_perm_oracle.v $(SRC_FILES)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated -o $@ $(TEST_DIR)/tb_tt_perm_oracle.v $(SRC_FILES)
 
 # ---------------------------------------------------------------------------
 # TT-4A JOB BUFFER TEST
@@ -80,4 +84,19 @@ sim-job-buffers: $(BUILD_DIR)/tb_tt_job_buffers.vvp
 	$(VVP) $<
 
 $(BUILD_DIR)/tb_tt_job_buffers.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_job_buffers.v | $(BUILD_DIR)
-	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -o $@ $(TEST_DIR)/tb_tt_job_buffers.v $(SRC_FILES)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated -o $@ $(TEST_DIR)/tb_tt_job_buffers.v $(SRC_FILES)
+
+# ---------------------------------------------------------------------------
+# TT-4B FULL AEAD VECTOR TEST
+# ---------------------------------------------------------------------------
+
+.PHONY: sim-aead-vectors
+
+$(ASCON_RTL_VEC_AD):
+	$(MAKE) -C $(ASCON_RTL) vectors-ascon-c
+
+sim-aead-vectors: $(BUILD_DIR)/tb_tt_aead_vectors.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_tt_aead_vectors.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(ASCON_RTL)/sim/generated -o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)

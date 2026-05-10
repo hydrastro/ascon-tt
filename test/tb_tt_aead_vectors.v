@@ -37,22 +37,22 @@ module tb_tt_aead_vectors;
     input integer idx;
     begin
       case (idx)
-        0:  byte_from_u128 = value[127:120];
-        1:  byte_from_u128 = value[119:112];
-        2:  byte_from_u128 = value[111:104];
-        3:  byte_from_u128 = value[103:96];
-        4:  byte_from_u128 = value[95:88];
-        5:  byte_from_u128 = value[87:80];
-        6:  byte_from_u128 = value[79:72];
-        7:  byte_from_u128 = value[71:64];
-        8:  byte_from_u128 = value[63:56];
-        9:  byte_from_u128 = value[55:48];
-        10: byte_from_u128 = value[47:40];
-        11: byte_from_u128 = value[39:32];
-        12: byte_from_u128 = value[31:24];
-        13: byte_from_u128 = value[23:16];
-        14: byte_from_u128 = value[15:8];
-        default: byte_from_u128 = value[7:0];
+        0:  byte_from_u128 = value[71:64];
+        1:  byte_from_u128 = value[79:72];
+        2:  byte_from_u128 = value[87:80];
+        3:  byte_from_u128 = value[95:88];
+        4:  byte_from_u128 = value[103:96];
+        5:  byte_from_u128 = value[111:104];
+        6:  byte_from_u128 = value[119:112];
+        7:  byte_from_u128 = value[127:120];
+        8:  byte_from_u128 = value[7:0];
+        9:  byte_from_u128 = value[15:8];
+        10: byte_from_u128 = value[23:16];
+        11: byte_from_u128 = value[31:24];
+        12: byte_from_u128 = value[39:32];
+        13: byte_from_u128 = value[47:40];
+        14: byte_from_u128 = value[55:48];
+        default: byte_from_u128 = value[63:56];
       endcase
     end
   endfunction
@@ -62,8 +62,11 @@ module tb_tt_aead_vectors;
     input [127:0] block1;
     input integer idx;
     begin
-      if (idx < 16) byte_from_two_blocks = block0[(8*idx)+:8];
-      else byte_from_two_blocks = block1[(8*(idx-16))+:8];
+      if (idx < 16) begin
+        byte_from_two_blocks = byte_from_u128(block0, idx);
+      end else begin
+        byte_from_two_blocks = byte_from_u128(block1, idx - 16);
+      end
     end
   endfunction
 

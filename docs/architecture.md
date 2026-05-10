@@ -78,7 +78,7 @@ uio_out[7:6] reserved
 0x13 LOAD_DATA         next msg_bytes bytes
 0x14 LOAD_TAG          next 16 bytes, decrypt only
 
-0x20 START
+0x20 START             full AEAD start, currently stubbed
 0x21 STATUS
 
 0x40 CLEAR
@@ -91,9 +91,15 @@ uio_out[7:6] reserved
 0x55 READ_TAG_XOR
 0x56 READ_AD_XOR
 0x57 READ_DATA_XOR
+
+0x60 LOAD_STATE        next 40 bytes, permutation debug/integration path
+0x61 SET_ROUNDS        next byte: 6, 8, or 12
+0x62 START_PERM
+0x63 READ_STATE_XOR
+0x64 READ_STATE_BYTE   next byte: index 0..39
 ```
 
-## Current TT-2 status
+## Current TT-3 status
 
 Implemented:
 
@@ -103,19 +109,21 @@ Implemented:
 - key/nonce/tag loading
 - AD/data byte counting
 - XOR debug checksums
-- START stub validation
+- permutation state loading
+- RPC=1 permutation start/done
+- permutation state byte/XOR readback
 
-Not yet implemented:
+Still stubbed:
 
-- real AEAD execution
+- `START` full AEAD execution
 - output ciphertext/plaintext queue
-- tag readout
-- shared permutation FSM
+- tag readout from full AEAD
 
 ## Implementation plan
 
 1. TT-1: project scaffold and protocol skeleton.
 2. TT-2: byte-storage frontend and command parser.
-3. TT-3: shared full-AEAD FSM using one RPC=1 permutation engine.
-4. TT-4: test against `ascon-rtl` vectors.
-5. TT-5: OpenLane/Tiny Tapeout area/frequency loop.
+3. TT-3: permutation integration using one RPC=1 engine.
+4. TT-4: shared full-AEAD FSM using the integrated permutation engine.
+5. TT-5: test against `ascon-rtl` vectors.
+6. TT-6: OpenLane/Tiny Tapeout area/frequency loop.

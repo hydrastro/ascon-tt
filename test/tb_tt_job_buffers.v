@@ -42,30 +42,7 @@ module tb_tt_job_buffers;
     end
   endfunction
 
-  function [7:0] xor_transformed_range;
-    input [7:0] base;
-    input integer nbytes;
-    input [7:0] mask;
-    integer j;
-    begin
-      xor_transformed_range = 8'd0;
-      for (j = 0; j < nbytes; j = j + 1) begin
-        xor_transformed_range = xor_transformed_range ^ ((base + j[7:0]) ^ mask);
-      end
-    end
-  endfunction
 
-  function [7:0] stub_tag_byte;
-    input [3:0] idx;
-    begin
-      stub_tag_byte = xor_range(8'h10, 16) ^
-                      xor_range(8'h30, 16) ^
-                      xor_range(8'hc0, 16) ^
-                      xor_range(8'h80, 17) ^
-                      xor_range(8'ha0, 31) ^
-                      {4'd0, idx};
-    end
-  endfunction
 
   task reset_dut;
     begin
@@ -207,29 +184,8 @@ module tb_tt_job_buffers;
     send_cmd_expect(8'h56, xor_range(8'h80, 17));
     send_cmd_expect(8'h57, xor_range(8'ha0, 31));
 
-    send_cmd_expect(8'h20, 8'hd0);
-    send_cmd_expect(8'h21, 8'hdb);
-
-    for (i = 0; i < 31; i = i + 1) begin
-      read_indexed(8'h30, i[7:0], response);
-      expected = (8'ha0 + i[7:0]) ^ 8'h5a;
-      if (response !== expected) begin
-        $display("FAIL: out byte %0d got=%02x expected=%02x", i, response, expected);
-        errors = errors + 1;
-      end
-    end
-
-    for (i = 0; i < 16; i = i + 1) begin
-      read_indexed(8'h31, i[7:0], response);
-      expected = stub_tag_byte(i[3:0]);
-      if (response !== expected) begin
-        $display("FAIL: result tag byte %0d got=%02x expected=%02x", i, response, expected);
-        errors = errors + 1;
-      end
-    end
-
-    send_cmd_expect(8'h58, xor_transformed_range(8'ha0, 31, 8'h5a));
-    send_cmd_expect(8'h59, 8'h00);
+    // Full real AEAD START/output/tag behavior is tested by sim-aead-vectors.
+    // This job-buffer test stays focused on loading, counters, XOR debug, and bounds.
 
     send_cmd_expect(8'h40, 8'hc1);
     set_len_le(8'h02, 32'd33, 8'ha2);

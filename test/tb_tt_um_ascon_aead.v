@@ -12,8 +12,9 @@ module tb_tt_um_ascon_aead;
   reg rst_n;
 
   integer errors;
-  integer i;
+  integer timeout;
   reg [7:0] expected_xor;
+  reg [7:0] response;
 
   tt_um_ascon_aead dut (
     .ui_in(ui_in),
@@ -46,8 +47,8 @@ module tb_tt_um_ascon_aead;
     begin
       @(negedge clk);
       ui_in = value;
-      uio_in[0] = 1'b1; // in_valid
-      uio_in[1] = 1'b1; // out_ready
+      uio_in[0] = 1'b1;
+      uio_in[1] = 1'b1;
       #1;
       if (!uio_out[0]) begin
         $display("FAIL: in_ready low before sending %02x", value);
@@ -60,27 +61,39 @@ module tb_tt_um_ascon_aead;
     end
   endtask
 
-  task expect_response;
-    input [7:0] expected;
-    integer timeout;
+  task get_response;
+    output [7:0] value;
+    integer t;
     begin
-      timeout = 0;
-      uio_in[1] = 1'b1; // out_ready
-      while (!uio_out[1] && timeout < 30) begin
+      t = 0;
+      uio_in[1] = 1'b1;
+      while (!uio_out[1] && t < 50) begin
         @(posedge clk);
-        timeout = timeout + 1;
+        t = t + 1;
       end
       #1;
       if (!uio_out[1]) begin
-        $display("FAIL: timeout waiting for response %02x", expected);
+        $display("FAIL: timeout waiting for response");
         errors = errors + 1;
-      end else if (uo_out !== expected) begin
-        $display("FAIL: response got=%02x expected=%02x", uo_out, expected);
-        errors = errors + 1;
+        value = 8'hxx;
+      end else begin
+        value = uo_out;
       end
       @(posedge clk);
       @(negedge clk);
       uio_in[1] = 1'b0;
+    end
+  endtask
+
+  task expect_response;
+    input [7:0] expected;
+    reg [7:0] value;
+    begin
+      get_response(value);
+      if (value !== expected) begin
+        $display("FAIL: response got=%02x expected=%02x", value, expected);
+        errors = errors + 1;
+      end
     end
   endtask
 
@@ -134,6 +147,26 @@ module tb_tt_um_ascon_aead;
     end
   endfunction
 
+  task read_state_byte_expect;
+    input [7:0] index;
+    input [7:0] expected;
+    begin
+      send_byte_no_resp(8'h64);
+      send_byte_no_resp(index);
+      expect_response(expected);
+    end
+  endtask
+
+  task wait_cycles;
+    input integer n;
+    integer k;
+    begin
+      for (k = 0; k < n; k = k + 1) begin
+        @(posedge clk);
+      end
+    end
+  endtask
+
   initial begin
     errors = 0;
     reset_dut();
@@ -143,54 +176,91 @@ module tb_tt_um_ascon_aead;
       errors = errors + 1;
     end
 
-    send_cmd_expect(8'h40, 8'hc1); // CLEAR
+    // TT-2 byte loading checks.
+    send_cmd_expect(8'h40, 8'hc1);
 
-    // SET_MODE decrypt
     send_byte_no_resp(8'h01);
     send_byte_no_resp(8'h01);
     expect_response(8'ha1);
+    send_cmd_expect(8'h50, 8'h01);
 
-    send_cmd_expect(8'h50, 8'h01); // READ_MODE
+    set_len_le(8'h02, 32'd17, 8'ha2);
+    set_len_le(8'h03, 32'd31, 8'ha3);
 
-    set_len_le(8'h02, 32'd17, 8'ha2); // SET_AD_BYTES
-    set_len_le(8'h03, 32'd31, 8'ha3); // SET_MSG_BYTES
-
-    send_cmd_payload_expect(8'h10, 16, 8'h10, 8'hb0); // LOAD_KEY
+    send_cmd_payload_expect(8'h10, 16, 8'h10, 8'hb0);
     expected_xor = xor_range(8'h10, 16);
     send_cmd_expect(8'h53, expected_xor);
 
-    send_cmd_payload_expect(8'h11, 16, 8'h30, 8'hb1); // LOAD_NONCE
+    send_cmd_payload_expect(8'h11, 16, 8'h30, 8'hb1);
     expected_xor = xor_range(8'h30, 16);
     send_cmd_expect(8'h54, expected_xor);
 
-    send_cmd_payload_expect(8'h12, 17, 8'h80, 8'hb2); // LOAD_AD
+    send_cmd_payload_expect(8'h12, 17, 8'h80, 8'hb2);
     send_cmd_expect(8'h51, 8'd17);
     expected_xor = xor_range(8'h80, 17);
     send_cmd_expect(8'h56, expected_xor);
 
-    send_cmd_payload_expect(8'h13, 31, 8'ha0, 8'hb3); // LOAD_DATA
+    send_cmd_payload_expect(8'h13, 31, 8'ha0, 8'hb3);
     send_cmd_expect(8'h52, 8'd31);
     expected_xor = xor_range(8'ha0, 31);
     send_cmd_expect(8'h57, expected_xor);
 
-    send_cmd_payload_expect(8'h14, 16, 8'hc0, 8'hb4); // LOAD_TAG
+    send_cmd_payload_expect(8'h14, 16, 8'hc0, 8'hb4);
     expected_xor = xor_range(8'hc0, 16);
     send_cmd_expect(8'h55, expected_xor);
 
-    // START stub should accept because key, nonce, and decrypt tag are loaded.
-    send_cmd_expect(8'h20, 8'hd0);
+    // Full AEAD START is tested by sim-aead-vectors.
+    send_cmd_expect(8'h21, 8'hc3);
 
-    // Status: alive=1, mode=1, done=1, auth_ok=1, key_loaded=1, nonce_loaded=1.
-    // busy should be 0 once response is consumed; error should be 0.
-    send_cmd_expect(8'h21, 8'hdb);
+    // TT-3 permutation integration checks.
+    send_cmd_expect(8'h40, 8'hc1);
+    send_cmd_payload_expect(8'h60, 40, 8'h00, 8'hc6);
+    expected_xor = xor_range(8'h00, 40);
+    send_cmd_expect(8'h63, expected_xor);
+
+    read_state_byte_expect(8'd0, 8'h00);
+    read_state_byte_expect(8'd39, 8'h27);
+
+    send_byte_no_resp(8'h61);
+    send_byte_no_resp(8'd12);
+    expect_response(8'ha6);
+
+    send_cmd_expect(8'h62, 8'hd6); // START_PERM
+
+    timeout = 0;
+    response = 8'h00;
+    while (timeout < 100) begin
+      wait_cycles(2);
+      send_byte_no_resp(8'h21);
+      get_response(response);
+      if (response[3]) begin
+        timeout = 100;
+      end else begin
+        timeout = timeout + 1;
+      end
+    end
+
+    if (!response[3]) begin
+      $display("FAIL: permutation did not set done, status=%02x", response);
+      errors = errors + 1;
+    end
+
+    // The permuted state should not retain the original XOR in normal cases.
+    // This is an integration sanity check; the permutation itself is verified in ascon-rtl.
+    send_byte_no_resp(8'h63);
+    get_response(response);
+    if (response === expected_xor) begin
+      $display("FAIL: permutation state XOR did not change");
+      errors = errors + 1;
+    end
 
     send_cmd_expect(8'hff, 8'hee);
 
     if (errors == 0) begin
-      $display("ALL ASCON TT BYTE FRONTEND TESTS PASSED");
+      $display("ALL ASCON TT PERM INTEGRATION TESTS PASSED");
       $finish;
     end else begin
-      $display("ASCON TT BYTE FRONTEND TESTS FAILED errors=%0d", errors);
+      $display("ASCON TT PERM INTEGRATION TESTS FAILED errors=%0d", errors);
       $fatal;
     end
   end

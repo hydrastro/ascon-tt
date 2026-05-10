@@ -144,31 +144,31 @@ module ascon_tt_serial_frontend #(
   reg        aead_clear_q;
 
   wire [127:0] ad_block0_w = {
-    ad_mem_q[0],  ad_mem_q[1],  ad_mem_q[2],  ad_mem_q[3],
-    ad_mem_q[4],  ad_mem_q[5],  ad_mem_q[6],  ad_mem_q[7],
-    ad_mem_q[8],  ad_mem_q[9],  ad_mem_q[10], ad_mem_q[11],
-    ad_mem_q[12], ad_mem_q[13], ad_mem_q[14], ad_mem_q[15]
+    ad_mem_q[7],  ad_mem_q[6],  ad_mem_q[5],  ad_mem_q[4],
+    ad_mem_q[3],  ad_mem_q[2],  ad_mem_q[1],  ad_mem_q[0],
+    ad_mem_q[15], ad_mem_q[14], ad_mem_q[13], ad_mem_q[12],
+    ad_mem_q[11], ad_mem_q[10], ad_mem_q[9],  ad_mem_q[8]
   };
 
   wire [127:0] ad_block1_w = {
-    ad_mem_q[16], ad_mem_q[17], ad_mem_q[18], ad_mem_q[19],
-    ad_mem_q[20], ad_mem_q[21], ad_mem_q[22], ad_mem_q[23],
-    ad_mem_q[24], ad_mem_q[25], ad_mem_q[26], ad_mem_q[27],
-    ad_mem_q[28], ad_mem_q[29], ad_mem_q[30], ad_mem_q[31]
+    ad_mem_q[23], ad_mem_q[22], ad_mem_q[21], ad_mem_q[20],
+    ad_mem_q[19], ad_mem_q[18], ad_mem_q[17], ad_mem_q[16],
+    ad_mem_q[31], ad_mem_q[30], ad_mem_q[29], ad_mem_q[28],
+    ad_mem_q[27], ad_mem_q[26], ad_mem_q[25], ad_mem_q[24]
   };
 
   wire [127:0] data_block0_w = {
-    data_mem_q[0],  data_mem_q[1],  data_mem_q[2],  data_mem_q[3],
-    data_mem_q[4],  data_mem_q[5],  data_mem_q[6],  data_mem_q[7],
-    data_mem_q[8],  data_mem_q[9],  data_mem_q[10], data_mem_q[11],
-    data_mem_q[12], data_mem_q[13], data_mem_q[14], data_mem_q[15]
+    data_mem_q[7],  data_mem_q[6],  data_mem_q[5],  data_mem_q[4],
+    data_mem_q[3],  data_mem_q[2],  data_mem_q[1],  data_mem_q[0],
+    data_mem_q[15], data_mem_q[14], data_mem_q[13], data_mem_q[12],
+    data_mem_q[11], data_mem_q[10], data_mem_q[9],  data_mem_q[8]
   };
 
   wire [127:0] data_block1_w = {
-    data_mem_q[16], data_mem_q[17], data_mem_q[18], data_mem_q[19],
-    data_mem_q[20], data_mem_q[21], data_mem_q[22], data_mem_q[23],
-    data_mem_q[24], data_mem_q[25], data_mem_q[26], data_mem_q[27],
-    data_mem_q[28], data_mem_q[29], data_mem_q[30], data_mem_q[31]
+    data_mem_q[23], data_mem_q[22], data_mem_q[21], data_mem_q[20],
+    data_mem_q[19], data_mem_q[18], data_mem_q[17], data_mem_q[16],
+    data_mem_q[31], data_mem_q[30], data_mem_q[29], data_mem_q[28],
+    data_mem_q[27], data_mem_q[26], data_mem_q[25], data_mem_q[24]
   };
 
   assign in_ready_o = ena_i && !out_valid_o && !perm_start_q && !aead_start_q;
@@ -198,48 +198,47 @@ module ascon_tt_serial_frontend #(
     begin
       insert_byte128 = old_v;
       case (index)
-        4'd0:  insert_byte128[127:120] = byte_v;
-        4'd1:  insert_byte128[119:112] = byte_v;
-        4'd2:  insert_byte128[111:104] = byte_v;
-        4'd3:  insert_byte128[103:96]  = byte_v;
-        4'd4:  insert_byte128[95:88]   = byte_v;
-        4'd5:  insert_byte128[87:80]   = byte_v;
-        4'd6:  insert_byte128[79:72]   = byte_v;
-        4'd7:  insert_byte128[71:64]   = byte_v;
-        4'd8:  insert_byte128[63:56]   = byte_v;
-        4'd9:  insert_byte128[55:48]   = byte_v;
-        4'd10: insert_byte128[47:40]   = byte_v;
-        4'd11: insert_byte128[39:32]   = byte_v;
-        4'd12: insert_byte128[31:24]   = byte_v;
-        4'd13: insert_byte128[23:16]   = byte_v;
-        4'd14: insert_byte128[15:8]    = byte_v;
-        default: insert_byte128[7:0]   = byte_v;
+        4'd0:  insert_byte128[71:64]    = byte_v;
+        4'd1:  insert_byte128[79:72]    = byte_v;
+        4'd2:  insert_byte128[87:80]    = byte_v;
+        4'd3:  insert_byte128[95:88]    = byte_v;
+        4'd4:  insert_byte128[103:96]   = byte_v;
+        4'd5:  insert_byte128[111:104]  = byte_v;
+        4'd6:  insert_byte128[119:112]  = byte_v;
+        4'd7:  insert_byte128[127:120]  = byte_v;
+        4'd8:  insert_byte128[7:0]      = byte_v;
+        4'd9:  insert_byte128[15:8]     = byte_v;
+        4'd10: insert_byte128[23:16]    = byte_v;
+        4'd11: insert_byte128[31:24]    = byte_v;
+        4'd12: insert_byte128[39:32]    = byte_v;
+        4'd13: insert_byte128[47:40]    = byte_v;
+        4'd14: insert_byte128[55:48]    = byte_v;
+        default: insert_byte128[63:56]  = byte_v;
       endcase
     end
   endfunction
-
 
   function [7:0] extract_byte128;
     input [127:0] value;
     input [3:0]   index;
     begin
       case (index)
-        4'd0:  extract_byte128 = value[127:120];
-        4'd1:  extract_byte128 = value[119:112];
-        4'd2:  extract_byte128 = value[111:104];
-        4'd3:  extract_byte128 = value[103:96];
-        4'd4:  extract_byte128 = value[95:88];
-        4'd5:  extract_byte128 = value[87:80];
-        4'd6:  extract_byte128 = value[79:72];
-        4'd7:  extract_byte128 = value[71:64];
-        4'd8:  extract_byte128 = value[63:56];
-        4'd9:  extract_byte128 = value[55:48];
-        4'd10: extract_byte128 = value[47:40];
-        4'd11: extract_byte128 = value[39:32];
-        4'd12: extract_byte128 = value[31:24];
-        4'd13: extract_byte128 = value[23:16];
-        4'd14: extract_byte128 = value[15:8];
-        default: extract_byte128 = value[7:0];
+        4'd0:  extract_byte128 = value[71:64];
+        4'd1:  extract_byte128 = value[79:72];
+        4'd2:  extract_byte128 = value[87:80];
+        4'd3:  extract_byte128 = value[95:88];
+        4'd4:  extract_byte128 = value[103:96];
+        4'd5:  extract_byte128 = value[111:104];
+        4'd6:  extract_byte128 = value[119:112];
+        4'd7:  extract_byte128 = value[127:120];
+        4'd8:  extract_byte128 = value[7:0];
+        4'd9:  extract_byte128 = value[15:8];
+        4'd10: extract_byte128 = value[23:16];
+        4'd11: extract_byte128 = value[31:24];
+        4'd12: extract_byte128 = value[39:32];
+        4'd13: extract_byte128 = value[47:40];
+        4'd14: extract_byte128 = value[55:48];
+        default: extract_byte128 = value[63:56];
       endcase
     end
   endfunction
@@ -249,22 +248,22 @@ module ascon_tt_serial_frontend #(
     input [4:0]   index;
     begin
       case (index)
-        5'd0:  extract_byte128_5 = value[127:120];
-        5'd1:  extract_byte128_5 = value[119:112];
-        5'd2:  extract_byte128_5 = value[111:104];
-        5'd3:  extract_byte128_5 = value[103:96];
-        5'd4:  extract_byte128_5 = value[95:88];
-        5'd5:  extract_byte128_5 = value[87:80];
-        5'd6:  extract_byte128_5 = value[79:72];
-        5'd7:  extract_byte128_5 = value[71:64];
-        5'd8:  extract_byte128_5 = value[63:56];
-        5'd9:  extract_byte128_5 = value[55:48];
-        5'd10: extract_byte128_5 = value[47:40];
-        5'd11: extract_byte128_5 = value[39:32];
-        5'd12: extract_byte128_5 = value[31:24];
-        5'd13: extract_byte128_5 = value[23:16];
-        5'd14: extract_byte128_5 = value[15:8];
-        default: extract_byte128_5 = value[7:0];
+        5'd0:  extract_byte128_5 = value[71:64];
+        5'd1:  extract_byte128_5 = value[79:72];
+        5'd2:  extract_byte128_5 = value[87:80];
+        5'd3:  extract_byte128_5 = value[95:88];
+        5'd4:  extract_byte128_5 = value[103:96];
+        5'd5:  extract_byte128_5 = value[111:104];
+        5'd6:  extract_byte128_5 = value[119:112];
+        5'd7:  extract_byte128_5 = value[127:120];
+        5'd8:  extract_byte128_5 = value[7:0];
+        5'd9:  extract_byte128_5 = value[15:8];
+        5'd10: extract_byte128_5 = value[23:16];
+        5'd11: extract_byte128_5 = value[31:24];
+        5'd12: extract_byte128_5 = value[39:32];
+        5'd13: extract_byte128_5 = value[47:40];
+        5'd14: extract_byte128_5 = value[55:48];
+        default: extract_byte128_5 = value[63:56];
       endcase
     end
   endfunction
@@ -292,12 +291,13 @@ module ascon_tt_serial_frontend #(
           if (j < 16) begin
             xor_output_blocks = xor_output_blocks ^ extract_byte128_5(block0, j[4:0]);
           end else begin
-            xor_output_blocks = xor_output_blocks ^ extract_byte128_5(block1, (j - 16));
+            xor_output_blocks = xor_output_blocks ^ extract_byte128_5(block1, (j[4:0] - 5'd16));
           end
         end
       end
     end
   endfunction
+
 
 
   function [7:0] status_byte;
@@ -313,12 +313,6 @@ module ascon_tt_serial_frontend #(
     end
   endfunction
 
-  function [7:0] stub_tag_byte;
-    input [3:0] index;
-    begin
-      stub_tag_byte = key_xor_q ^ nonce_xor_q ^ tag_xor_q ^ ad_xor_q ^ data_xor_q ^ {4'd0, index};
-    end
-  endfunction
 
   task clear_all;
     begin
@@ -445,8 +439,6 @@ module ascon_tt_serial_frontend #(
       perm_load_valid_q <= 1'b0;
       aead_start_q <= 1'b0;
       aead_clear_q <= 1'b0;
-      aead_start_q <= 1'b0;
-      aead_clear_q <= 1'b0;
 
       if (perm_done_w) begin
         done_o <= 1'b1;
@@ -464,7 +456,7 @@ module ascon_tt_serial_frontend #(
             if (k < 16) begin
               out_mem_q[k] <= extract_byte128_5(aead_out_block0_w, k[4:0]);
             end else begin
-              out_mem_q[k] <= extract_byte128_5(aead_out_block1_w, (k - 16));
+              out_mem_q[k] <= extract_byte128_5(aead_out_block1_w, (k[4:0] - 5'd16));
             end
           end else begin
             out_mem_q[k] <= 8'd0;
