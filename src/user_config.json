@@ -6,6 +6,8 @@
     "dir::ascon_tt_aead_core_stub.v",
     "dir::ascon_tt_perm_core.v",
     "dir::ascon_tt_aead_bridge.v",
+    "dir::ascon_tt_aead_bridge_dual.v",
+    "dir::ascon_tt_aead_shared.v",
     "dir::ascon_core/ascon_round_comb.v",
     "dir::ascon_core/ascon_perm_unrolled.v",
     "dir::ascon_core/ascon_aead128_enc_ad.v",

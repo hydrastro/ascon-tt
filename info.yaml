@@ -5,8 +5,8 @@ project:
   discord: ""
   description: "Full Ascon-AEAD128 accelerator with a Tiny Tapeout serial byte protocol"
   language: "Verilog"
-  clock_hz: 25000000
-  tiles: "8x8"
+  clock_hz: 10000000
+  tiles: "8x2"
   top_module: "tt_um_ascon_aead"
   source_files:
     - "project.v"
