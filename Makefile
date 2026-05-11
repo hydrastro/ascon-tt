@@ -323,16 +323,17 @@ $(BUILD_DIR)/tb_tt_aead_vectors_prod_directout.vvp: $(SRC_FILES) $(TEST_DIR)/tb_
 		-P $(TOP).ENABLE_PERM_DEBUG=0 \
 		-P $(TOP).ENABLE_DIAGNOSTICS=0 \
 		-P $(TOP).ENABLE_OUT_BUFFER=0 \
+		-P $(TOP).USE_SHARED_AEAD=1 \
 		-P $(TOP).MAX_AD_BYTES=32 \
 		-P $(TOP).MAX_DATA_BYTES=32 \
 		-o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
 
 synth-prod-aead-top-directout: | $(BUILD_DIR)
-	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); synth -top $(TOP); check; stat' > $(BUILD_DIR)/yosys_tt_prod_aead_top_directout_stat.txt
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); chparam -set USE_SHARED_AEAD 1 $(TOP); synth -top $(TOP); check; stat' > $(BUILD_DIR)/yosys_tt_prod_aead_top_directout_stat.txt
 	cat $(BUILD_DIR)/yosys_tt_prod_aead_top_directout_stat.txt
 
 $(TT5_DIR)/prod_aead_top_directout.txt: $(SRC_FILES) | $(TT5_DIR)
-	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); synth -top $(TOP); check; stat' > $@
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); chparam -set USE_SHARED_AEAD 1 $(TOP); synth -top $(TOP); check; stat' > $@
 
 tt7a4-report: $(TT5_DIR)/full_aead_bridge.txt $(TT5_DIR)/prod_aead_top.txt $(TT5_DIR)/prod_aead_top_directout.txt $(TT5_DIR)/perm_core.txt
 	python3 tools/report_tt5_profiles.py $^
@@ -813,3 +814,41 @@ $(BUILD_DIR)/tb_tt16_core_cycles.vvp: $(SRC_FILES) test/tb_tt16_core_cycles.v | 
 tt16-perf-cost: sim-perf-cycles
 	python3 tools/tt16_perf_cost_model.py --perf-log $(BUILD_DIR)/tb_tt16_core_cycles.log --out-dir build/tt16
 	cat build/tt16/perf_cost_report.md
+
+
+# ---------------------------------------------------------------------------
+# TT-18 DUAL REFERENCE TARGETS
+# ---------------------------------------------------------------------------
+
+.PHONY: sim-aead-vectors-dual-ref-directout synth-dual-ref-directout
+
+sim-aead-vectors-dual-ref-directout: $(BUILD_DIR)/tb_tt_aead_vectors_dual_ref_directout.vvp
+	$(VVP) $<
+
+$(BUILD_DIR)/tb_tt_aead_vectors_dual_ref_directout.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
+	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(SIM_GEN_DIR) \
+		-P $(TOP).USE_SHARED_AEAD=0 \
+		-P $(TOP).ENABLE_PERM_DEBUG=0 \
+		-P $(TOP).ENABLE_DIAGNOSTICS=0 \
+		-P $(TOP).ENABLE_OUT_BUFFER=0 \
+		-P $(TOP).USE_SHARED_AEAD=1 \
+		-P $(TOP).MAX_AD_BYTES=32 \
+		-P $(TOP).MAX_DATA_BYTES=32 \
+		-o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
+
+synth-dual-ref-directout: | $(BUILD_DIR)
+	$(YOSYS) -p 'read_verilog $(SRC_FILES); chparam -set USE_SHARED_AEAD 0 $(TOP); chparam -set ENABLE_PERM_DEBUG 0 $(TOP); chparam -set ENABLE_DIAGNOSTICS 0 $(TOP); chparam -set ENABLE_OUT_BUFFER 0 $(TOP); synth -top $(TOP); check; stat' > $(BUILD_DIR)/yosys_tt_dual_ref_directout_stat.txt
+	cat $(BUILD_DIR)/yosys_tt_dual_ref_directout_stat.txt
+
+
+# ---------------------------------------------------------------------------
+# TT-18 DOCUMENTATION CONSOLIDATION
+# ---------------------------------------------------------------------------
+
+.PHONY: docs-refresh docs-ledger
+
+docs-refresh:
+	python3 tools/tt18_generate_docs.py
+
+docs-ledger: docs-refresh
+	cat docs/run_ledger.md

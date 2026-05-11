@@ -33,7 +33,7 @@ module tt_um_ascon_aead #(
  
   parameter integer ENABLE_DIAGNOSTICS = `TT_ASCON_DEF_ENABLE_DIAGNOSTICS,
  parameter integer ENABLE_PERM_DEBUG = `TT_ASCON_DEF_ENABLE_PERM_DEBUG,
- parameter integer USE_SHARED_AEAD = 0) (
+ parameter integer USE_SHARED_AEAD = 1) (
   input  wire [7:0] ui_in,    // Dedicated inputs
   output wire [7:0] uo_out,   // Dedicated outputs
   input  wire [7:0] uio_in,   // Bidirectional IO input path
