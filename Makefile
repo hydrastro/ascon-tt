@@ -774,3 +774,42 @@ tt14d-shared-report:
 	$(MAKE) sim-aead-vectors-shared-prod-directout
 	$(MAKE) synth-prod-aead-shared-directout
 	python3 tools/report_tt5_profiles.py build/yosys_tt_prod_aead_shared_directout_stat.txt build/yosys_tt_prod_aead_top_directout_stat.txt 2>/dev/null || true
+
+
+# ---------------------------------------------------------------------------
+# TT-15 TILE/FREQUENCY SWEEP
+# ---------------------------------------------------------------------------
+
+.PHONY: tt15-find-gds tt15-sweep tt15-set-6x2-10mhz tt15-set-4x2-5mhz tt15-set-8x2-25mhz
+
+tt15-find-gds:
+	tools/tt15_find_gds.sh
+
+tt15-sweep:
+	tools/tt15_tile_freq_sweep.sh
+
+tt15-set-6x2-10mhz:
+	python3 tools/tt15_set_tt_config.py --tiles 6x2 --clock-hz 10000000
+
+tt15-set-4x2-5mhz:
+	python3 tools/tt15_set_tt_config.py --tiles 4x2 --clock-hz 5000000
+
+tt15-set-8x2-25mhz:
+	python3 tools/tt15_set_tt_config.py --tiles 8x2 --clock-hz 25000000
+
+
+# ---------------------------------------------------------------------------
+# TT-16 PERFORMANCE/COST MODEL
+# ---------------------------------------------------------------------------
+
+.PHONY: sim-perf-cycles tt16-perf-cost
+
+sim-perf-cycles: $(BUILD_DIR)/tb_tt16_core_cycles.vvp
+	$(VVP) $< | tee $(BUILD_DIR)/tb_tt16_core_cycles.log
+
+$(BUILD_DIR)/tb_tt16_core_cycles.vvp: $(SRC_FILES) test/tb_tt16_core_cycles.v | $(BUILD_DIR)
+	$(IVERILOG) -g2005-sv -Isrc -Isrc/ascon_core -o $@ test/tb_tt16_core_cycles.v $(SRC_FILES)
+
+tt16-perf-cost: sim-perf-cycles
+	python3 tools/tt16_perf_cost_model.py --perf-log $(BUILD_DIR)/tb_tt16_core_cycles.log --out-dir build/tt16
+	cat build/tt16/perf_cost_report.md
