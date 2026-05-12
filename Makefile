@@ -5,6 +5,8 @@ BUILD_DIR := build
 
 ASCON_RTL ?= ../ascon-rtl
 ASCON_RTL_WORKTREE ?= ../ascon-rtl
+ASCON_C_DIR ?= $(ASCON_RTL)/../ascon-c
+CC ?= gcc
 SIM_GEN_DIR ?= sim/generated
 ASCON_CORE_RTL_DIR ?= $(SRC_DIR)/ascon_core
 ASCON_RTL_RTL ?= $(ASCON_CORE_RTL_DIR)
@@ -41,7 +43,8 @@ LOCAL_SRC_FILES := \
 	$(SRC_DIR)/ascon_tt_serial_frontend.v \
 	$(SRC_DIR)/ascon_tt_aead_core_stub.v \
 	$(SRC_DIR)/ascon_tt_perm_core.v \
-	$(SRC_DIR)/ascon_tt_aead_bridge.v
+	$(SRC_DIR)/ascon_tt_aead_bridge.v \
+	$(SRC_DIR)/ascon_tt_aead_shared.v
 
 ASCON_RTL_FILES := \
 	$(ASCON_RTL_RTL)/ascon_round_comb.v \
@@ -83,6 +86,7 @@ sanity:
 	@test -f src/ascon_core/ascon_perm_unrolled.v
 	@bad="$$(find . \
 		-path ./.git -prune -o \
+		-path ./.ttsetup -prune -o \
 		-path ./build -prune -o \
 		-path ./.venv -prune -o \
 		-path ./tt -prune -o \
@@ -132,17 +136,26 @@ $(BUILD_DIR)/tb_tt_job_buffers.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_job_buffers.v
 .PHONY: sim-aead-vectors
 
 $(ASCON_RTL_VEC_AD):
-	mkdir -p $(SIM_GEN_DIR)
-	@if [ ! -d "$(ASCON_RTL_WORKTREE)" ]; then \
-		echo "ERROR: ASCON_RTL_WORKTREE=$(ASCON_RTL_WORKTREE) does not exist."; \
-		echo "Use a writable ascon-rtl checkout for vector generation, not the read-only Nix store ASCON_RTL."; \
-		exit 1; \
-	fi
-	$(MAKE) -C $(ASCON_RTL_WORKTREE) vectors-ascon-c
-	cp $(ASCON_RTL_WORKTREE)/sim/generated/ascon_aead128_ad_vectors.vh $(ASCON_RTL_VEC_AD)
+	mkdir -p $(SIM_GEN_DIR) $(BUILD_DIR)
+	@test -n "$(ASCON_RTL)"   || { echo "ERROR: ASCON_RTL not set. Run inside: nix develop"; exit 1; }
+	@test -d "$(ASCON_RTL)"   || { echo "ERROR: ASCON_RTL=$(ASCON_RTL) does not exist"; exit 1; }
+	@test -n "$(ASCON_C_DIR)" || { echo "ERROR: ASCON_C_DIR not set. Run inside: nix develop"; exit 1; }
+	@test -d "$(ASCON_C_DIR)" || { echo "ERROR: ASCON_C_DIR=$(ASCON_C_DIR) does not exist"; exit 1; }
+	$(CC) -std=c99 -O2 \
+		-I$(ASCON_C_DIR)/src \
+		-I$(ASCON_C_DIR)/src/opt64 \
+		-I$(ASCON_C_DIR)/crypto_aead/asconaead128/ref \
+		$(ASCON_RTL)/tools/ascon_c_aead128_ad_vectors.c \
+		-o $(BUILD_DIR)/ascon_c_aead128_ad_vectors
+	$(BUILD_DIR)/ascon_c_aead128_ad_vectors > $(ASCON_RTL_VEC_AD)
 
 sim-aead-vectors: $(BUILD_DIR)/tb_tt_aead_vectors.vvp
 	$(VVP) $<
+
+.PHONY: gen-vectors
+gen-vectors:
+	rm -f $(ASCON_RTL_VEC_AD)
+	$(MAKE) $(ASCON_RTL_VEC_AD)
 
 $(BUILD_DIR)/tb_tt_aead_vectors.vvp: $(SRC_FILES) $(TEST_DIR)/tb_tt_aead_vectors.v $(ASCON_RTL_VEC_AD) | $(BUILD_DIR)
 	$(IVERILOG) -g2005-sv -I$(SRC_DIR) -I$(ASCON_RTL_RTL) -I$(SIM_GEN_DIR) -o $@ $(TEST_DIR)/tb_tt_aead_vectors.v $(SRC_FILES)
@@ -509,8 +522,18 @@ tt12-create-user-config: tt11b-tools-check
 	@test -f src/config.json || { echo "ERROR: missing src/config.json"; exit 1; }
 	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --create-user-config
 
-tt12-harden: tt11b-tools-check
-	$(TT_ENV) $(TT_ENV) $(PY_TT) ./$(TT_TOOLS_DIR)/tt_tool.py --harden
+tt12-harden: sanity lint synth tt11b-tools-check
+	@test -f src/user_config.json || { \
+		echo "ERROR: src/user_config.json missing. Run: make tt12-create-user-config"; \
+		exit 1; \
+	}
+	@test -n "$(PDK_ROOT)" || { echo "ERROR: PDK_ROOT not set"; exit 1; }
+	$(TT_ENV) $(PY_TT) -m librelane \
+		--pdk-root $(PDK_ROOT) \
+		--pdk $(PDK) \
+		--design-dir $(SRC_DIR) \
+		$(SRC_DIR)/config.json \
+		$(SRC_DIR)/user_config.json
 
 tt12-print-warnings: tt11b-tools-check
 	@if [ ! -d runs/wokwi ] && [ ! -d build/tt12b ]; then echo "No completed hardening run found yet."; exit 0; fi
@@ -605,6 +628,8 @@ tt12-python-venv:
 	test -f tt/requirements.txt
 	$(PYTHON) -m venv $(PY_VENV)
 	$(PY_TT) -m pip install --upgrade pip setuptools wheel
+	$(PY_TT) -m pip install --only-binary=numpy "numpy<2.0" || \
+		$(PY_TT) -m pip install "numpy<1.27"
 	$(PY_TT) -m pip install -r tt/requirements.txt
 	$(PY_TT) -m pip install yowasp-yosys
 	$(PY_TT) -m pip install "librelane==$(LIBRELANE_TAG)"
@@ -725,4 +750,4 @@ repo-status:
 	@find docs -maxdepth 1 -type f | sort
 	@echo ""
 	@echo "== generated dirs =="
-	@find build runs sim/generated artifacts/runs -maxdepth 2 2>/dev/null | sort | head -80 || true
+	@find build runs sim/generated artifacts/runs -maxdepth 2 2>/dev/null | sort | head -80 || truep

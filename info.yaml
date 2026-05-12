@@ -6,7 +6,7 @@ project:
   description: "Full Ascon-AEAD128 accelerator with a Tiny Tapeout serial byte protocol"
   language: "Verilog"
   clock_hz: 25000000
-  tiles: "8x8"
+  tiles: "2x2"
   top_module: "tt_um_ascon_aead"
   source_files:
     - "project.v"
@@ -22,35 +22,32 @@ project:
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add pins.
 # This section is for the Tiny Tapeout datasheet/website.
 pinout:
-  # Inputs
-  ui[0]: ""
-  ui[1]: ""
-  ui[2]: ""
-  ui[3]: ""
-  ui[4]: ""
-  ui[5]: ""
-  ui[6]: ""
-  ui[7]: ""
+  ui[0]: "cmd_data[0]"
+  ui[1]: "cmd_data[1]"
+  ui[2]: "cmd_data[2]"
+  ui[3]: "cmd_data[3]"
+  ui[4]: "cmd_data[4]"
+  ui[5]: "cmd_data[5]"
+  ui[6]: "cmd_data[6]"
+  ui[7]: "cmd_data[7]"
 
-  # Outputs
-  uo[0]: ""
-  uo[1]: ""
-  uo[2]: ""
-  uo[3]: ""
-  uo[4]: ""
-  uo[5]: ""
-  uo[6]: ""
-  uo[7]: ""
+  uo[0]: "resp[0]"
+  uo[1]: "resp[1]"
+  uo[2]: "resp[2]"
+  uo[3]: "resp[3]"
+  uo[4]: "resp[4]"
+  uo[5]: "resp[5]"
+  uo[6]: "resp[6]"
+  uo[7]: "resp[7]"
 
-  # Bidirectional pins
-  uio[0]: ""
-  uio[1]: ""
-  uio[2]: ""
-  uio[3]: ""
-  uio[4]: ""
-  uio[5]: ""
-  uio[6]: ""
-  uio[7]: ""
+  uio[0]: "in_valid (input)"
+  uio[1]: "out_ready (input)"
+  uio[2]: "in_ready (output)"   # note: uio_oe drives [5:0] as outputs
+  uio[3]: "out_valid (output)"
+  uio[4]: "busy (output)"
+  uio[5]: "done (output)"
+  uio[6]: "auth_ok (output)"
+  uio[7]: "error (output)"
 
 # Do not change!
 yaml_version: 6

@@ -5,9 +5,11 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     ascon-rtl.url = "github:hydrastro/ascon-rtl";
     ascon-rtl.flake = false;
+    ascon-c.url = "github:ascon/ascon-c";
+    ascon-c.flake = false;
   };
 
-  outputs = { self, nixpkgs, ascon-rtl }:
+  outputs = { self, nixpkgs, ascon-rtl, ascon-c }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -16,8 +18,6 @@
 
       runtimeLibs = with pkgs; [
         stdenv.cc.cc.lib
-
-        librelane
 
         # CairoSVG / cairocffi native runtime
         cairo
@@ -64,11 +64,21 @@
           yosys
           klayout
 
+          # Python + venv
           py
           py.pkgs.pip
+          py.pkgs.tkinter
           py.pkgs.virtualenv
           py.pkgs.setuptools
           py.pkgs.wheel
+
+          # Native build tools needed by pip when building wheels from source
+          # (numpy, scipy, etc. need these if no pre-built wheel matches)
+          ninja
+          meson
+          cmake
+          pkg-config
+          gcc
 
           which
           coreutils
@@ -80,18 +90,24 @@
         ];
 
         ASCON_RTL = "${ascon-rtl}";
+        ASCON_C_DIR = "${ascon-c}";
         LD_LIBRARY_PATH = lib.makeLibraryPath runtimeLibs;
         QT_QPA_PLATFORM = "offscreen";
 
         shellHook = ''
           echo "ascon-tt dev shell"
           echo "ASCON_RTL=${ascon-rtl}"
-          echo "LD_LIBRARY_PATH includes runtime libs for klayout and cairosvg."
+          echo "ASCON_C_DIR=${ascon-c}"
           echo
+
+          # Make sure pip-built C extensions can find Nix-provided shared libs.
+          export NIX_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+
           echo "Recommended after dependency changes:"
-          echo "  make tt12-python-reset"
-          echo "  make tt12-python-venv"
-          echo "  make tt12-python-check"
+          echo "  make tt12-python-reset && make tt12-python-venv"
+          echo
+          echo "To generate simulation vectors:"
+          echo "  make gen-vectors"
         '';
       };
     };
