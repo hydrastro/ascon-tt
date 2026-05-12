@@ -852,3 +852,34 @@ docs-refresh:
 
 docs-ledger: docs-refresh
 	cat docs/run_ledger.md
+
+
+# ---------------------------------------------------------------------------
+# PERMANENT TT/NIX ENVIRONMENT TARGETS
+# ---------------------------------------------------------------------------
+
+.PHONY: tt-env-bootstrap tt-env-check tt-create-user-config tt-harden tt-print-warnings tt-print-stats tt-create-png tt-open-klayout
+
+tt-env-bootstrap:
+	tools/tt_env_bootstrap.sh
+
+tt-env-check:
+	tools/tt_env_check.sh
+
+tt-create-user-config: tt-env-check
+	tools/tt_env_run.sh .venv/bin/python ./tt/tt_tool.py --create-user-config
+
+tt-harden: tt-env-check
+	tools/tt_env_run.sh .venv/bin/python ./tt/tt_tool.py --harden
+
+tt-print-warnings: tt-env-check
+	tools/tt_env_run.sh .venv/bin/python ./tt/tt_tool.py --print-warnings
+
+tt-print-stats: tt-env-check
+	tools/tt_env_run.sh .venv/bin/python ./tt/tt_tool.py --print-stats
+
+tt-create-png: tt-env-check
+	tools/tt_env_run.sh .venv/bin/python ./tt/tt_tool.py --create-png
+
+tt-open-klayout: tt-env-check
+	tools/tt_env_run.sh .venv/bin/python ./tt/tt_tool.py --open-in-klayout

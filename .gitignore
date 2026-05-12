@@ -44,3 +44,6 @@ tt/**/*.pyc
 
 # Local PDK/cache installed by hardening tools
 .ttsetup/
+build/
+runs/
+sim/generated/
