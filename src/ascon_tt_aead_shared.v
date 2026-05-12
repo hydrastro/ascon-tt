@@ -33,7 +33,7 @@ module ascon_tt_aead_shared #(
   output reg  [127:0] out_block1_o
 );
 
-  localparam [63:0] ASCON_128A_IV = 64'h00001000808c0001;
+  localparam [63:0] ASCON_128_IV  = 64'h80400c0600000000;
   localparam [63:0] ASCON_PAD0    = 64'h0000000000000001;
   localparam [63:0] ASCON_DSEP    = 64'h8000000000000000;
 
@@ -68,7 +68,11 @@ module ascon_tt_aead_shared #(
 
   reg         perm_start_q;
   reg [3:0]   perm_rounds_q;
-  reg [319:0] perm_state_i_q;
+  // perm_state_i_c is driven by a combinatorial always block that mirrors the
+  // state expression each FSM state passes to start_perm. Because it is written
+  // in always @(*) rather than always @(posedge clk), synthesis infers a wire
+  // rather than 320 flip-flops, saving ~320 FFs (~1920 µm² on sky130A).
+  reg [319:0] perm_state_i_c;
   wire        perm_busy_w;
   wire        perm_done_w;
   wire [319:0] perm_state_o_w;
@@ -153,7 +157,7 @@ module ascon_tt_aead_shared #(
     .rst_n    (rst_n),
     .start_i  (perm_start_q),
     .rounds_i (perm_rounds_q),
-    .state_i  (perm_state_i_q),
+    .state_i  (perm_state_i_c),
     .busy_o   (perm_busy_w),
     .done_o   (perm_done_w),
     .state_o  (perm_state_o_w)
@@ -195,10 +199,9 @@ module ascon_tt_aead_shared #(
 
   task start_perm;
     input [3:0] rounds;
-    input [319:0] state_in;
+    input [319:0] state_in;  // unused: state_in is now driven combinatorially
     begin
       perm_rounds_q  <= rounds;
-      perm_state_i_q <= state_in;
       perm_start_q   <= 1'b1;
     end
   endtask
@@ -229,6 +232,47 @@ module ascon_tt_aead_shared #(
     end
   endtask
 
+  // ---------------------------------------------------------------------------
+  // Combinatorial permutation input mux.
+  // Mirrors the state expression each FSM state would pass to start_perm, so
+  // perm_state_i_c is a pure wire to synthesis (no flip-flops inferred).
+  // ---------------------------------------------------------------------------
+  always @(*) begin
+    case (state_q)
+      ST_IDLE: begin
+        // Initialization: IV || key || nonce (using live inputs since start_i
+        // and this block fire in the same cycle)
+        perm_state_i_c = {ASCON_128_IV, key_i[127:64], key_i[63:0],
+                          nonce_i[127:64], nonce_i[63:0]};
+      end
+      ST_AD_WAIT_FULL: begin
+        perm_state_i_c = {s0_w ^ a0_w, s1_w ^ a1_w, s2_w, s3_w, s4_w};
+      end
+      ST_AD_FULL_WAIT: begin
+        // Either ASCON_PAD0 path or DSEP path; start_perm only fires on the
+        // ASCON_PAD0 branch (ad_present, all full blocks absorbed, no partial)
+        perm_state_i_c = {perm_state_o_w[319:256] ^ ASCON_PAD0,
+                          perm_state_o_w[255:0]};
+      end
+      ST_AD_WAIT_PARTIAL: begin
+        perm_state_i_c = {ad_part_s0_w, ad_part_s1_w, s2_w, s3_w, s4_w};
+      end
+      ST_MSG_WAIT_FULL: begin
+        perm_state_i_c = {full_state0_w, full_state1_w, s2_w, s3_w, s4_w};
+      end
+      ST_DRAIN: begin
+        if (msg_final_bytes_q == 5'd0) begin
+          perm_state_i_c = {s0_w ^ ASCON_PAD0, s1_w, s2_w ^ k0_w, s3_w ^ k1_w, s4_w};
+        end else begin
+          perm_state_i_c = {s0_w, s1_w, s2_w ^ k0_w, s3_w ^ k1_w, s4_w};
+        end
+      end
+      default: begin
+        perm_state_i_c = ascon_state_q;
+      end
+    endcase
+  end
+
   always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
       state_q                <= ST_IDLE;
@@ -246,7 +290,6 @@ module ascon_tt_aead_shared #(
       out_idx_q              <= 2'd0;
       perm_start_q           <= 1'b0;
       perm_rounds_q          <= 4'd0;
-      perm_state_i_q         <= 320'd0;
       done_o                 <= 1'b0;
       auth_ok_o              <= 1'b0;
       result_tag_o           <= 128'd0;
@@ -293,9 +336,9 @@ module ascon_tt_aead_shared #(
               result_tag_o           <= 128'd0;
               out_block0_o           <= 128'd0;
               out_block1_o           <= 128'd0;
-              ascon_state_q          <= {ASCON_128A_IV, key_i[127:64], key_i[63:0],
+              ascon_state_q          <= {ASCON_128_IV, key_i[127:64], key_i[63:0],
                                          nonce_i[127:64], nonce_i[63:0]};
-              start_perm(4'd12, {ASCON_128A_IV, key_i[127:64], key_i[63:0],
+              start_perm(4'd12, {ASCON_128_IV, key_i[127:64], key_i[63:0],
                                   nonce_i[127:64], nonce_i[63:0]});
               state_q <= ST_INIT_WAIT;
             end
@@ -323,7 +366,7 @@ module ascon_tt_aead_shared #(
             ad_full_blocks_left_q <= ad_full_blocks_left_q - 32'd1;
             ad_idx_q              <= ad_idx_q + 2'd1;
             ascon_state_q         <= {s0_w ^ a0_w, s1_w ^ a1_w, s2_w, s3_w, s4_w};
-            start_perm(4'd8, {s0_w ^ a0_w, s1_w ^ a1_w, s2_w, s3_w, s4_w});
+            start_perm(4'd6, {s0_w ^ a0_w, s1_w ^ a1_w, s2_w, s3_w, s4_w});
             state_q <= ST_AD_FULL_WAIT;
           end
 
@@ -335,7 +378,7 @@ module ascon_tt_aead_shared #(
               end else if (ad_final_bytes_q != 5'd0) begin
                 state_q <= ST_AD_WAIT_PARTIAL;
               end else if (ad_present_q) begin
-                start_perm(4'd8, {perm_state_o_w[319:256] ^ ASCON_PAD0,
+                start_perm(4'd6, {perm_state_o_w[319:256] ^ ASCON_PAD0,
                                   perm_state_o_w[255:0]});
                 state_q <= ST_AD_EMPTY_WAIT;
               end else begin
@@ -348,7 +391,7 @@ module ascon_tt_aead_shared #(
           ST_AD_WAIT_PARTIAL: begin
             ad_idx_q       <= ad_idx_q + 2'd1;
             ascon_state_q  <= {ad_part_s0_w, ad_part_s1_w, s2_w, s3_w, s4_w};
-            start_perm(4'd8, {ad_part_s0_w, ad_part_s1_w, s2_w, s3_w, s4_w});
+            start_perm(4'd6, {ad_part_s0_w, ad_part_s1_w, s2_w, s3_w, s4_w});
             state_q <= ST_AD_PARTIAL_WAIT;
           end
 
@@ -371,7 +414,7 @@ module ascon_tt_aead_shared #(
             ascon_state_q          <= {full_state0_w, full_state1_w, s2_w, s3_w, s4_w};
             msg_full_blocks_left_q <= msg_full_blocks_left_q - 32'd1;
             data_idx_q             <= data_idx_q + 2'd1;
-            start_perm(4'd8, {full_state0_w, full_state1_w, s2_w, s3_w, s4_w});
+            start_perm(4'd6, {full_state0_w, full_state1_w, s2_w, s3_w, s4_w});
             state_q <= ST_MSG_FULL_WAIT;
           end
 
@@ -437,4 +480,3 @@ module ascon_tt_aead_shared #(
 endmodule
 
 `default_nettype wire
-

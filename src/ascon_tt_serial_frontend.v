@@ -149,32 +149,46 @@ module ascon_tt_serial_frontend #(
   reg        aead_start_q;
   reg        aead_clear_q;
 
+  // Block1 wires: indices 16-31 only valid when MAX_AD_BYTES/MAX_DATA_BYTES >= 32.
+  // When the array is smaller, synthesis dead-code-eliminates these wires since
+  // ad_bytes_q / msg_bytes_q can never reach block1. The ternary guards silence
+  // elaboration-time out-of-bounds warnings.
+  wire [7:0] ad_mem_safe  [0:31];
+  wire [7:0] data_mem_safe[0:31];
+  generate
+    genvar gi;
+    for (gi = 0; gi < 32; gi = gi + 1) begin : g_safe_mem
+      assign ad_mem_safe[gi]   = (gi < MAX_AD_BYTES)   ? ad_mem_q[gi   < MAX_AD_BYTES   ? gi : 0] : 8'h00;
+      assign data_mem_safe[gi] = (gi < MAX_DATA_BYTES) ? data_mem_q[gi < MAX_DATA_BYTES ? gi : 0] : 8'h00;
+    end
+  endgenerate
+
   wire [127:0] ad_block0_w = {
-    ad_mem_q[7],  ad_mem_q[6],  ad_mem_q[5],  ad_mem_q[4],
-    ad_mem_q[3],  ad_mem_q[2],  ad_mem_q[1],  ad_mem_q[0],
-    ad_mem_q[15], ad_mem_q[14], ad_mem_q[13], ad_mem_q[12],
-    ad_mem_q[11], ad_mem_q[10], ad_mem_q[9],  ad_mem_q[8]
+    ad_mem_safe[7],  ad_mem_safe[6],  ad_mem_safe[5],  ad_mem_safe[4],
+    ad_mem_safe[3],  ad_mem_safe[2],  ad_mem_safe[1],  ad_mem_safe[0],
+    ad_mem_safe[15], ad_mem_safe[14], ad_mem_safe[13], ad_mem_safe[12],
+    ad_mem_safe[11], ad_mem_safe[10], ad_mem_safe[9],  ad_mem_safe[8]
   };
 
   wire [127:0] ad_block1_w = {
-    ad_mem_q[23], ad_mem_q[22], ad_mem_q[21], ad_mem_q[20],
-    ad_mem_q[19], ad_mem_q[18], ad_mem_q[17], ad_mem_q[16],
-    ad_mem_q[31], ad_mem_q[30], ad_mem_q[29], ad_mem_q[28],
-    ad_mem_q[27], ad_mem_q[26], ad_mem_q[25], ad_mem_q[24]
+    ad_mem_safe[23], ad_mem_safe[22], ad_mem_safe[21], ad_mem_safe[20],
+    ad_mem_safe[19], ad_mem_safe[18], ad_mem_safe[17], ad_mem_safe[16],
+    ad_mem_safe[31], ad_mem_safe[30], ad_mem_safe[29], ad_mem_safe[28],
+    ad_mem_safe[27], ad_mem_safe[26], ad_mem_safe[25], ad_mem_safe[24]
   };
 
   wire [127:0] data_block0_w = {
-    data_mem_q[7],  data_mem_q[6],  data_mem_q[5],  data_mem_q[4],
-    data_mem_q[3],  data_mem_q[2],  data_mem_q[1],  data_mem_q[0],
-    data_mem_q[15], data_mem_q[14], data_mem_q[13], data_mem_q[12],
-    data_mem_q[11], data_mem_q[10], data_mem_q[9],  data_mem_q[8]
+    data_mem_safe[7],  data_mem_safe[6],  data_mem_safe[5],  data_mem_safe[4],
+    data_mem_safe[3],  data_mem_safe[2],  data_mem_safe[1],  data_mem_safe[0],
+    data_mem_safe[15], data_mem_safe[14], data_mem_safe[13], data_mem_safe[12],
+    data_mem_safe[11], data_mem_safe[10], data_mem_safe[9],  data_mem_safe[8]
   };
 
   wire [127:0] data_block1_w = {
-    data_mem_q[23], data_mem_q[22], data_mem_q[21], data_mem_q[20],
-    data_mem_q[19], data_mem_q[18], data_mem_q[17], data_mem_q[16],
-    data_mem_q[31], data_mem_q[30], data_mem_q[29], data_mem_q[28],
-    data_mem_q[27], data_mem_q[26], data_mem_q[25], data_mem_q[24]
+    data_mem_safe[23], data_mem_safe[22], data_mem_safe[21], data_mem_safe[20],
+    data_mem_safe[19], data_mem_safe[18], data_mem_safe[17], data_mem_safe[16],
+    data_mem_safe[31], data_mem_safe[30], data_mem_safe[29], data_mem_safe[28],
+    data_mem_safe[27], data_mem_safe[26], data_mem_safe[25], data_mem_safe[24]
   };
 
   assign in_ready_o = ena_i && !out_valid_o && !perm_start_q && !aead_start_q;
@@ -499,8 +513,10 @@ module ascon_tt_serial_frontend #(
 
         end
 
-        out_xor_q <= xor_output_blocks(aead_out_block0_w, aead_out_block1_w, msg_bytes_q);
-        result_tag_xor_q <= xor_tag128(aead_result_tag_w);
+        if (ENABLE_DIAGNOSTICS != 0) begin
+          out_xor_q <= xor_output_blocks(aead_out_block0_w, aead_out_block1_w, msg_bytes_q);
+          result_tag_xor_q <= xor_tag128(aead_result_tag_w);
+        end
       end
 
       if (out_fire_w) begin
@@ -569,8 +585,10 @@ module ascon_tt_serial_frontend #(
                   auth_ok_o <= 1'b0;
                   error_o <= 1'b0;
                   result_loaded_q <= 1'b0;
-                  result_tag_xor_q <= 8'd0;
-                  out_xor_q <= 8'd0;
+                  if (ENABLE_DIAGNOSTICS != 0) begin
+                    result_tag_xor_q <= 8'd0;
+                    out_xor_q <= 8'd0;
+                  end
                   aead_start_q <= 1'b1;
                   issue_response(8'hd0);
                 end else begin
@@ -693,29 +711,33 @@ module ascon_tt_serial_frontend #(
               end
               CMD_LOAD_KEY: begin
                 key_q <= insert_byte128(key_q, byte_idx_q[3:0], cmd_data_i);
-                key_xor_q <= key_xor_q ^ cmd_data_i;
+                if (ENABLE_DIAGNOSTICS != 0) key_xor_q <= key_xor_q ^ cmd_data_i;
                 if (remaining_q == 32'd1) begin key_loaded_q <= 1'b1; issue_response(8'hb0); end
               end
               CMD_LOAD_NONCE: begin
                 nonce_q <= insert_byte128(nonce_q, byte_idx_q[3:0], cmd_data_i);
-                nonce_xor_q <= nonce_xor_q ^ cmd_data_i;
+                if (ENABLE_DIAGNOSTICS != 0) nonce_xor_q <= nonce_xor_q ^ cmd_data_i;
                 if (remaining_q == 32'd1) begin nonce_loaded_q <= 1'b1; issue_response(8'hb1); end
               end
               CMD_LOAD_AD: begin
                 if (byte_idx_q < MAX_AD_BYTES[7:0]) ad_mem_q[byte_idx_q[4:0]] <= cmd_data_i;
-                ad_count_q <= ad_count_q + 32'd1;
-                ad_xor_q <= ad_xor_q ^ cmd_data_i;
+                if (ENABLE_DIAGNOSTICS != 0) begin
+                  ad_count_q <= ad_count_q + 32'd1;
+                  ad_xor_q <= ad_xor_q ^ cmd_data_i;
+                end
                 if (remaining_q == 32'd1) begin ad_loaded_q <= 1'b1; issue_response(8'hb2); end
               end
               CMD_LOAD_DATA: begin
                 if (byte_idx_q < MAX_DATA_BYTES[7:0]) data_mem_q[byte_idx_q[4:0]] <= cmd_data_i;
-                data_count_q <= data_count_q + 32'd1;
-                data_xor_q <= data_xor_q ^ cmd_data_i;
+                if (ENABLE_DIAGNOSTICS != 0) begin
+                  data_count_q <= data_count_q + 32'd1;
+                  data_xor_q <= data_xor_q ^ cmd_data_i;
+                end
                 if (remaining_q == 32'd1) begin data_loaded_q <= 1'b1; issue_response(8'hb3); end
               end
               CMD_LOAD_TAG: begin
                 tag_q <= insert_byte128(tag_q, byte_idx_q[3:0], cmd_data_i);
-                tag_xor_q <= tag_xor_q ^ cmd_data_i;
+                if (ENABLE_DIAGNOSTICS != 0) tag_xor_q <= tag_xor_q ^ cmd_data_i;
                 if (remaining_q == 32'd1) begin tag_loaded_q <= 1'b1; issue_response(8'hb4); end
               end
               CMD_READ_OUT_BYTE: begin // TT7A4_DIRECT_OUTPUT_PROFILE
