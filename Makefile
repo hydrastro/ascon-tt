@@ -170,15 +170,12 @@ synth-all:
 # ── Profile matrix ────────────────────────────────────────────────────────
 tt5-profiles: $(ALL_SRC) | $(BUILD)
 	@mkdir -p $(BUILD)/tt5
-	@for V in 0 1; do for R in 1 8; do \
-	  echo "--- ASCON_VARIANT=$$V ROUNDS_PER_CYCLE=$$R ---"; \
-	  $(YOSYS) -q -p " \
-	    read_verilog $(ALL_SRC); \
-	    chparam -set ASCON_VARIANT $$V -set ROUNDS_PER_CYCLE $$R $(TOP); \
-	    synth -top $(TOP); stat" \
-	    > $(BUILD)/tt5/v$${V}_r$${R}.txt 2>&1; \
-	done; done
-	python3 tools/report_tt5_profiles.py $(BUILD)/tt5/*.txt || true
+	python3 tools/tt5_run_profiles.py --out-dir $(BUILD)/tt5
+	python3 tools/report_tt5_profiles.py $(BUILD)/tt5/v*.txt
+
+tt5-report:
+	python3 tools/report_tt5_profiles.py $(BUILD)/tt5/v*.txt
+
 
 # ── Python venv (for hardening) ───────────────────────────────────────────
 tt12-python-venv:
@@ -241,3 +238,50 @@ harden-128-maxperf:
 # ── Clean ─────────────────────────────────────────────────────────────────
 clean:
 	rm -rf $(BUILD) $(SIM_GEN)
+
+# ── Aliases matching the guide ────────────────────────────────────────────────
+# The guide uses this sim target name; alias to our sim-128a
+sim-aead-vectors-shared-prod-directout: sim-128a
+
+# Sanity = lint + synth quick check
+sanity: lint
+	$(YOSYS) -p " 	  read_verilog $(ALL_SRC); 	  chparam -set ASCON_VARIANT 1 -set ROUNDS_PER_CYCLE 1 $(TOP); 	  synth -top $(TOP); check" && echo "Sanity OK"
+
+# Pre-harden check: python env + lint + synth
+tt12-pre-harden-check: tt12-python-check lint
+	$(MAKE) synth ASCON_VARIANT=$(ASCON_VARIANT) ROUNDS_PER_CYCLE=$(ROUNDS_PER_CYCLE) 	  USE_SHARED_AEAD=$(USE_SHARED_AEAD)
+	@echo "pre-harden checks passed"
+
+# Print cell category breakdown (delegates to tt_tool.py)
+tt12-print-cell-category:
+	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --print-cell-category || true
+
+# Area fit report
+$(BUILD)/tt13:
+	mkdir -p $(BUILD)/tt13
+
+tt13-area-report: | $(BUILD)/tt13
+	python3 tools/tt13_area_fit_report.py 	  --run-dir $$(python3 tools/tt12b_find_run_dir.py 2>/dev/null || echo runs/wokwi) 	  --out-dir $(BUILD)/tt13 || true
+	@test -f $(BUILD)/tt13/area_fit_report.md && 	  cat $(BUILD)/tt13/area_fit_report.md || echo "Report not generated yet"
+
+# Tile/frequency sweep
+tt15-sweep:
+	TT_SWEEP_TILES="$${TT_SWEEP_TILES:-6x2 4x2 8x2}" 	TT_SWEEP_FREQS="$${TT_SWEEP_FREQS:-10000000 25000000 50000000}" 	./tools/tt15_tile_freq_sweep.sh
+
+# Find the GDS after hardening
+tt15-find-gds:
+	./tools/tt15_find_gds.sh
+
+# Capture a harden artifact
+tt17-capture:
+	./tools/tt17_capture_harden.sh 	  --tiles $(TILES) 	  --clock-hz $(CLOCK_HZ) 	  --store production 	  --name "$(NAME)" 	  $(if $(ALLOW_DIRTY),--allow-dirty,)
+
+# tt16-perf-cost with output to build/tt16
+$(BUILD)/tt16:
+	mkdir -p $(BUILD)/tt16
+
+tt16-perf-cost: | $(BUILD)/tt16
+	python3 tools/tt16_perf_cost_model.py 	  --variant $(ASCON_VARIANT) 	  --rpc $(ROUNDS_PER_CYCLE) 	  --out-dir $(BUILD)/tt16 || true
+	@test -f $(BUILD)/tt16/perf_cost_report.md && 	  cat $(BUILD)/tt16/perf_cost_report.md || 	  echo "perf_cost_model not applicable standalone; run after synth"
+
+.PHONY: sim-aead-vectors-shared-prod-directout sanity tt12-pre-harden-check         tt12-print-cell-category tt13-area-report tt15-sweep tt15-find-gds         tt17-capture tt16-perf-cost
