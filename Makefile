@@ -199,7 +199,10 @@ tt12-create-user-config: tt12-python-check
 	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --create-user-config
 
 tt12-harden:
-	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --harden
+	$(TT_ENV) $(PY) -m librelane \
+	  --pdk-root $(PDK_ROOT) \
+	  --pdk $(PDK) \
+	  src/config.json
 
 tt12-print-warnings:
 	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --print-warnings || true
