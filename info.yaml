@@ -13,7 +13,7 @@ project:
     - "ascon_tt_serial_frontend.v"
     - "ascon_tt_aead_core_stub.v"
     - "ascon_tt_perm_core.v"
-    - "ascon_tt_aead_bridge.v"
+    - "ascon_tt_aead_shared.v"
     - "ascon_core/ascon_round_comb.v"
     - "ascon_core/ascon_perm_unrolled.v"
     - "ascon_core/ascon_aead128_enc_ad.v"

@@ -18,7 +18,7 @@ VERILATOR ?= verilator
 YOSYS ?= yosys
 TT_TOOLS_DIR ?= tt
 PDK_ROOT ?= $(CURDIR)/.ttsetup/pdk
-PDK ?= sky130A
+PDK ?= gf180mcuD
 LIBRELANE_TAG ?= 3.0.0rc1
 
 
@@ -43,7 +43,6 @@ LOCAL_SRC_FILES := \
 	$(SRC_DIR)/ascon_tt_serial_frontend.v \
 	$(SRC_DIR)/ascon_tt_aead_core_stub.v \
 	$(SRC_DIR)/ascon_tt_perm_core.v \
-	$(SRC_DIR)/ascon_tt_aead_bridge.v \
 	$(SRC_DIR)/ascon_tt_aead_shared.v
 
 ASCON_RTL_FILES := \
@@ -619,7 +618,10 @@ tt12b-first-hardening-run:
 PY_VENV ?= .venv
 PYTHON ?= python3
 PY_TT ?= $(PY_VENV)/bin/python
-TT_ENV ?= PATH=$(CURDIR)/$(PY_VENV)/bin:$(PATH) PDK_ROOT=$(PDK_ROOT) PDK=$(PDK) LIBRELANE_TAG=$(LIBRELANE_TAG)
+VENV_SITE = $(shell $(PY_TT) -c "import site; print(site.getsitepackages()[0])" 2>/dev/null)
+TT_ENV ?= PATH=$(CURDIR)/$(PY_VENV)/bin:$(PATH) \
+          PDK_ROOT=$(PDK_ROOT) PDK=$(PDK) LIBRELANE_TAG=$(LIBRELANE_TAG) \
+          PYTHONPATH=$(VENV_SITE)
 
 tt12-python-reset:
 	rm -rf $(PY_VENV)

@@ -5,15 +5,15 @@
     "dir::ascon_tt_serial_frontend.v",
     "dir::ascon_tt_aead_core_stub.v",
     "dir::ascon_tt_perm_core.v",
-    "dir::ascon_tt_aead_bridge.v",
+    "dir::ascon_tt_aead_shared.v",
     "dir::ascon_core/ascon_round_comb.v",
     "dir::ascon_core/ascon_perm_unrolled.v",
     "dir::ascon_core/ascon_aead128_enc_ad.v",
     "dir::ascon_core/ascon_aead128_dec_ad.v"
   ],
   "DIE_AREA": "0 0 1378.16 225.76",
-  "FP_DEF_TEMPLATE": "dir::../tt/tech/sky130A/def/tt_block_8x2_pg.def",
-  "VDD_PIN": "VPWR",
-  "GND_PIN": "VGND",
-  "RT_MAX_LAYER": "met4"
+  "FP_DEF_TEMPLATE": "dir::../tt/tech/gf180mcuD/def/tt_block_8x2_pg.def",
+  "VDD_PIN": "VDD",
+  "GND_PIN": "VSS",
+  "RT_MAX_LAYER": "Metal4"
 }
