@@ -119,6 +119,7 @@ $(BUILD)/sim_128a.vvp: $(ALL_SRC) $(TEST)/tb_tt_aead_vectors.v \
     $(SIM_GEN)/ascon_aead128_ad_vectors.vh | $(BUILD)
 	$(IVERILOG) -g2005-sv \
 	  -I$(SRC) -I$(SRC)/ascon_core -I$(SIM_GEN) \
+	  -DASCON_VARIANT_VAL=1 \
 	  -P$(TOP).ASCON_VARIANT=1 \
 	  -P$(TOP).ROUNDS_PER_CYCLE=1 \
 	  -P$(TOP).USE_SHARED_AEAD=1 \
@@ -133,6 +134,7 @@ $(BUILD)/sim_128.vvp: $(ALL_SRC) $(TEST)/tb_tt_aead_vectors.v \
     $(SIM_GEN)/ascon_aead128_ad_vectors.vh | $(BUILD)
 	$(IVERILOG) -g2005-sv \
 	  -I$(SRC) -I$(SRC)/ascon_core -I$(SIM_GEN) \
+	  -DASCON_VARIANT_VAL=0 \
 	  -P$(TOP).ASCON_VARIANT=0 \
 	  -P$(TOP).ROUNDS_PER_CYCLE=1 \
 	  -P$(TOP).USE_SHARED_AEAD=1 \

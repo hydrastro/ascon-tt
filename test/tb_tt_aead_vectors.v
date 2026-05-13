@@ -17,7 +17,12 @@ module tb_tt_aead_vectors;
   integer timeout;
   reg [7:0] response;
 
-  tt_um_ascon_aead dut (
+  `ifndef ASCON_VARIANT_VAL
+  `define ASCON_VARIANT_VAL 1
+`endif
+  tt_um_ascon_aead #(
+    .ASCON_VARIANT(`ASCON_VARIANT_VAL)
+  ) dut (
     .ui_in(ui_in),
     .uo_out(uo_out),
     .uio_in(uio_in),
