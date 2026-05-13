@@ -2,33 +2,33 @@
 `default_nettype none
 // SPDX-License-Identifier: Apache-2.0
 //
-// Bridge selector for TT AEAD implementation.
+// ascon_tt_aead_bridge.v
 //
-// USE_SHARED_AEAD=0 keeps the known-good dual enc/dec bridge.
-// USE_SHARED_AEAD=1 selects the TT-14D min-area shared core.
+// Selects between shared-datapath and dual-path AEAD cores.
+//   USE_SHARED_AEAD=1 (default): ascon_tt_aead_shared  (area-efficient)
+//   USE_SHARED_AEAD=0:           ascon_tt_aead_bridge_dual (reference)
+//
+// ASCON_VARIANT is forwarded to ascon_tt_aead_shared only.
 
 module ascon_tt_aead_bridge #(
   parameter integer ROUNDS_PER_CYCLE = 1,
-  parameter integer USE_SHARED_AEAD  = 0
+  parameter integer USE_SHARED_AEAD  = 1,
+  parameter integer ASCON_VARIANT    = 1   // 0=ASCON-128, 1=ASCON-128a
 ) (
   input  wire         clk,
   input  wire         rst_n,
   input  wire         clear_i,
-
   input  wire         start_i,
   input  wire         decrypt_i,
-
   input  wire [127:0] key_i,
   input  wire [127:0] nonce_i,
   input  wire [31:0]  ad_bytes_i,
   input  wire [31:0]  msg_bytes_i,
   input  wire [127:0] tag_i,
-
   input  wire [127:0] ad_block0_i,
   input  wire [127:0] ad_block1_i,
   input  wire [127:0] data_block0_i,
   input  wire [127:0] data_block1_i,
-
   output wire         busy_o,
   output wire         done_o,
   output wire         auth_ok_o,
@@ -40,7 +40,8 @@ module ascon_tt_aead_bridge #(
   generate
     if (USE_SHARED_AEAD != 0) begin : gen_shared
       ascon_tt_aead_shared #(
-        .ROUNDS_PER_CYCLE(ROUNDS_PER_CYCLE)
+        .ROUNDS_PER_CYCLE(ROUNDS_PER_CYCLE),
+        .ASCON_VARIANT   (ASCON_VARIANT)
       ) u_impl (
         .clk          (clk),
         .rst_n        (rst_n),
@@ -92,6 +93,4 @@ module ascon_tt_aead_bridge #(
   endgenerate
 
 endmodule
-
 `default_nettype wire
-

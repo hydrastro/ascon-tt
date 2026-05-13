@@ -20,7 +20,9 @@ module ascon_tt_serial_frontend #(
   parameter integer USE_SHARED_AEAD = 1,
  
   parameter integer MAX_AD_BYTES   = 32,
-  parameter integer MAX_DATA_BYTES = 32
+  parameter integer MAX_DATA_BYTES = 32,
+  parameter integer ASCON_VARIANT    = 1,   // 0=ASCON-128, 1=ASCON-128a
+  parameter integer ROUNDS_PER_CYCLE = 1    // 1=min-area, 8=max-perf
 ) (
   input  wire       clk,
   input  wire       rst_n,
@@ -441,7 +443,8 @@ module ascon_tt_serial_frontend #(
   endgenerate
 
   ascon_tt_aead_bridge #(
-    .ROUNDS_PER_CYCLE(1),
+    .ROUNDS_PER_CYCLE(ROUNDS_PER_CYCLE),
+    .ASCON_VARIANT(ASCON_VARIANT),
     .USE_SHARED_AEAD(USE_SHARED_AEAD)
   ) u_aead_bridge (
     .clk            (clk),

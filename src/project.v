@@ -33,7 +33,10 @@ module tt_um_ascon_aead #(
  
   parameter integer ENABLE_DIAGNOSTICS = `TT_ASCON_DEF_ENABLE_DIAGNOSTICS,
  parameter integer ENABLE_PERM_DEBUG = `TT_ASCON_DEF_ENABLE_PERM_DEBUG,
- parameter integer USE_SHARED_AEAD = 1) (
+ parameter integer USE_SHARED_AEAD = 1,
+  parameter integer ASCON_VARIANT    = 1,   // 0=ASCON-128, 1=ASCON-128a
+  parameter integer ROUNDS_PER_CYCLE = 1    // 1=min-area, 8=max-perf
+) (
   input  wire [7:0] ui_in,    // Dedicated inputs
   output wire [7:0] uo_out,   // Dedicated outputs
   input  wire [7:0] uio_in,   // Bidirectional IO input path
@@ -47,6 +50,8 @@ module tt_um_ascon_aead #(
   ascon_tt_serial_frontend #(
     .ENABLE_PERM_DEBUG(ENABLE_PERM_DEBUG),
     .USE_SHARED_AEAD(USE_SHARED_AEAD),
+    .ASCON_VARIANT(ASCON_VARIANT),
+    .ROUNDS_PER_CYCLE(ROUNDS_PER_CYCLE),
     .ENABLE_DIAGNOSTICS(ENABLE_DIAGNOSTICS),
     .ENABLE_OUT_BUFFER(ENABLE_OUT_BUFFER),
     .MAX_AD_BYTES(MAX_AD_BYTES),
