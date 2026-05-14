@@ -226,22 +226,7 @@ tt12-python-reset:
 # tt_tool.py --create-user-config fails because it runs yosys without -D defines.
 # We generate user_config.json directly from src/config.json instead.
 tt12-write-user-config:
-	python3 - <<'PYEOF'
-import json, re
-from pathlib import Path
-cfg = json.loads(Path("src/config.json").read_text())
-defines = cfg.get("VERILOG_DEFINES", [])
-ucfg = {}
-for d in defines:
-    if "=" in d:
-        k, v = d.split("=", 1)
-        try: ucfg[k] = int(v)
-        except ValueError: ucfg[k] = v
-    else:
-        ucfg[d] = 1
-Path("src/user_config.json").write_text(json.dumps(ucfg, indent=2))
-print("src/user_config.json written:", ucfg)
-PYEOF
+	python3 tools/write_user_config.py
 
 # ── Harden ─────────────────────────────────────────────────────────────────────
 # Calls tt_tool.py --harden which drives the full LibreLane/OpenLane2 flow.
@@ -289,31 +274,7 @@ tt13-area-report: | $(BUILD)/tt13
 
 # ── Perf/cost model (informational only) ──────────────────────────────────────
 tt16-perf-cost: | $(BUILD)
-	@echo "Throughput estimates for current config:"
-	@python3 - <<'PYEOF'
-import json, math
-try:
-    cfg = json.load(open("src/config.json"))
-    clock_hz = round(1e9 / cfg.get("CLOCK_PERIOD", 100))
-    defs = {d.split("=")[0]: int(d.split("=")[1]) if "=" in d else 1
-            for d in cfg.get("VERILOG_DEFINES", [])}
-    variant = defs.get("ASCON_VARIANT", 1)
-    rpc = defs.get("ROUNDS_PER_CYCLE", 1)
-    rate = 16 if variant else 8
-    pb = 8 if variant else 6
-    pa = 12
-    cycles_per_block = pb // rpc + (1 if pb % rpc else 0)
-    throughput_bps = rate * clock_hz / cycles_per_block
-    print(f"  Variant:         ASCON-{'128a' if variant else '128'}")
-    print(f"  Clock:           {clock_hz/1e6:.1f} MHz")
-    print(f"  Rate:            {rate} bytes/block")
-    print(f"  PB rounds:       {pb} ({rpc}/cycle → {cycles_per_block} cycles/block)")
-    print(f"  Throughput:      {throughput_bps/1e6:.2f} MB/s  "
-          f"({throughput_bps/1e3:.0f} kbps)")
-except Exception as e:
-    print(f"  (could not compute: {e})")
-PYEOF
-
+	python3 tools/perf_cost_estimate.py
 # ── Capture artifact ───────────────────────────────────────────────────────────
 NAME ?= run
 tt17-capture:
