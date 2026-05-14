@@ -561,5 +561,4 @@ module ascon_tt_aead_shared #(
   end
 
 endmodule
-
 `default_nettype wire

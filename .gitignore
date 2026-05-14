@@ -42,4 +42,5 @@ __pycache__/
 tt/__pycache__/
 tt/**/*.pyc
 
+# Local PDK/cache installed by hardening tools
 .ttsetup/

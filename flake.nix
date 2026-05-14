@@ -23,6 +23,44 @@
 
       runtimeLibs = with pkgs; [
         stdenv.cc.cc.lib
+        tcl
+        tk
+
+        librelane
+
+        # CairoSVG / cairocffi native runtime
+        cairo
+        pixman
+        libpng
+        zlib
+        expat
+        glib
+        pango
+        harfbuzz
+        fribidi
+        gdk-pixbuf
+        librsvg
+        libjpeg
+        libtiff
+
+        # Fonts/graphics/runtime dependencies
+        fontconfig
+        freetype
+        libGL
+        libxkbcommon
+
+        # X11 libraries. Use renamed top-level nixpkgs attrs.
+        libx11
+        libxext
+        libxrender
+        libxcb
+        libxft
+        libxi
+        libxrandr
+        libxcursor
+        libxinerama
+        libsm
+        libice
         cairo pixman libpng zlib expat
         glib pango harfbuzz fribidi gdk-pixbuf librsvg
         libjpeg libtiff
@@ -49,6 +87,7 @@
           py.pkgs.virtualenv
           py.pkgs.setuptools
           py.pkgs.wheel
+          py.pkgs.tkinter
 
           # Build tools for pip wheel compilation
           ninja meson cmake pkg-config gcc
