@@ -240,16 +240,31 @@ tt12-harden: tt12-write-user-config tt12-patch-librelane
 
 # ── Post-harden inspection ─────────────────────────────────────────────────────
 tt12-print-warnings:
-	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --print-warnings || true
+	@echo "=== Warnings from last harden run ==="
+	@find runs/wokwi -name "*.log" -newer src/config.json 2>/dev/null \
+	  | xargs grep -l -i "warning" 2>/dev/null \
+	  | while read f; do echo "--- $$f ---"; grep -i "warning" "$$f" | tail -5; done || true
+	@python3 tools/post_harden.py runs/wokwi
 
 tt12-print-stats:
-	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --print-stats || true
+	python3 tools/post_harden.py runs/wokwi
 
 tt12-print-cell-category:
-	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --print-cell-category || true
+	@find runs/wokwi -name "metrics.json" 2>/dev/null | sort | tail -1 \
+	  | xargs python3 -c "import json,sys; m=json.load(open(sys.argv[1])); \
+	    [print(k,v) for k,v in m.items() if 'cell' in k.lower()]" 2>/dev/null || \
+	  echo "No metrics.json found — run make tt12-harden first." 
 
 tt12-create-png:
-	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --create-png || true
+	@GDS=$$(find runs/wokwi -name "*.gds" 2>/dev/null | sort | tail -1); \
+	 if [ -n "$$GDS" ]; then \
+	   echo "Generating PNG from $$GDS ..."; \
+	   $(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --create-png 2>/dev/null || \
+	   python3 tools/tt17_klayout_screenshot.py "$$GDS" 2>/dev/null || \
+	   echo "PNG generation requires klayout or tt_tool.py — skipping."; \
+	 else \
+	   echo "No GDS found — run make tt12-harden first."; \
+	 fi
 
 tt12-pre-harden-check: tt12-python-check
 	$(MAKE) synth ASCON_VARIANT=$(ASCON_VARIANT) ROUNDS_PER_CYCLE=$(ROUNDS_PER_CYCLE)
@@ -257,7 +272,10 @@ tt12-pre-harden-check: tt12-python-check
 
 # ── Find GDS ───────────────────────────────────────────────────────────────────
 tt15-find-gds:
-	@./tools/tt15_find_gds.sh
+	@echo "=== GDS / DEF files from last harden run ==="
+	@find runs -name "*.gds" -o -name "*.gds.gz" 2>/dev/null | sort | tail -10 || true
+	@echo ""
+	@find runs -name "*.def" 2>/dev/null | grep -v "/.tmp" | sort | tail -5 || true
 
 # ── Tile/frequency sweep ───────────────────────────────────────────────────────
 tt15-sweep:
@@ -270,11 +288,7 @@ $(BUILD)/tt13:
 	mkdir -p $(BUILD)/tt13
 
 tt13-area-report: | $(BUILD)/tt13
-	python3 tools/tt13_area_fit_report.py \
-	  --run-dir $$(python3 tools/tt12b_find_run_dir.py 2>/dev/null || echo runs/wokwi) \
-	  --out-dir $(BUILD)/tt13 2>/dev/null || true
-	@test -f $(BUILD)/tt13/area_fit_report.md && \
-	  cat $(BUILD)/tt13/area_fit_report.md || echo "Run hardening first."
+	python3 tools/post_harden.py runs/wokwi
 
 # ── Perf/cost model (informational only) ──────────────────────────────────────
 tt16-perf-cost: | $(BUILD)
