@@ -136,3 +136,13 @@ LibreLane's OpenDB helper scripts are executed through OpenROAD's embedded Pytho
 .venv/bin/python -m pip install rich
 export PYTHONPATH="$PWD/.venv/lib/python3.13/site-packages:${PYTHONPATH:-}"
 ```
+
+## NixOS note: tkinter / `_tkinter`
+
+LibreLane 3.x may evaluate PDK Tcl config through Python's `tkinter.Tcl()` during config loading. On NixOS, a venv created from plain `python3` can miss the compiled `_tkinter` extension. This flake deliberately uses `python3Full`; after updating the flake, delete and recreate `.venv` so it is based on that interpreter:
+
+```sh
+make tt12-python-reset
+make tt12-python-venv
+make tt12-python-check
+```

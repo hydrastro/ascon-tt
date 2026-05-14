@@ -11,9 +11,9 @@
       pkgs = import nixpkgs { inherit system; };
       lib = pkgs.lib;
 
-      # Python with tkinter compiled in; this matters for LibreLane/tt tooling
-      # when a venv is created on NixOS.
-      py = pkgs.python3.withPackages (ps: [ ps.tkinter ps.rich ps.click ]);
+      # Use the full CPython build so the _tkinter extension is present.
+      # LibreLane 3.x still evaluates some Tcl PDK config through tkinter.Tcl().
+      py = pkgs.python3Full.withPackages (ps: [ ps.rich ps.click ps.pip ps.virtualenv ps.setuptools ps.wheel ]);
 
       runtimeLibs = with pkgs; [
         stdenv.cc.cc.lib
@@ -41,12 +41,9 @@
           tcl
           tk
 
-          # Python and build helpers
+          # Python and build helpers.  py is python3Full.withPackages above;
+          # keep pip/virtualenv inside that same interpreter family.
           py
-          py.pkgs.pip
-          py.pkgs.virtualenv
-          py.pkgs.setuptools
-          py.pkgs.wheel
           ninja meson cmake pkg-config gcc
 
           # Utilities
@@ -67,6 +64,10 @@
           mkdir -p "$PDK_ROOT"
           export LIBRELANE_CONTAINER_ENGINE=""
           export LIBRELANE_DOCKERLESS=1
+          python3 - <<'PYTK'
+import _tkinter, tkinter
+print("Python tkinter OK:", _tkinter.TK_VERSION)
+PYTK
           echo "ascon-tt GF26a dev shell"
           echo "  PDK=$PDK"
           echo "  PDK_ROOT=$PDK_ROOT"

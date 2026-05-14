@@ -210,6 +210,7 @@ tt12-python-venv:
 	@test -f $(TT_DIR)/requirements.txt || \
 	  { echo "ERROR: tt/ submodule not checked out."; \
 	    echo "Run: git submodule update --init --recursive"; exit 1; }
+	python3 -c "import _tkinter, tkinter; print('host Python tkinter OK')"
 	python3 -m venv $(VENV)
 	$(PY) -m pip install --upgrade pip
 	$(PY) -m pip install -r $(TT_DIR)/requirements.txt
@@ -218,6 +219,7 @@ tt12-python-venv:
 
 tt12-python-check:
 	@test -x $(PY) || { echo "ERROR: run 'make tt12-python-venv' first"; exit 1; }
+	$(PY) -c "import _tkinter, tkinter; print('venv tkinter OK')"
 	$(PY) -c "import chevron, yaml, git, librelane, rich, site; print('Python env OK; site=' + site.getsitepackages()[0])"
 	$(TT_ENV) command -v yowasp-yosys
 	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --help >/dev/null 2>&1
