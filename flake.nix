@@ -36,7 +36,8 @@
           openroad
           klayout
           magic-vlsi
-          netgen
+          # Do not add pkgs.netgen here: in nixpkgs that is the 3D mesh generator,
+          # not Timothy Edwards' Netgen LVS tool.
           tcl
           tk
 
