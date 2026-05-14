@@ -67,7 +67,7 @@ TT_ENV := \
   LIBRELANE_TAG=$(LIBRELANE_TAG) \
   LIBRELANE_DOCKERLESS=1
 
-.PHONY: all help clean \
+.PHONY: all help clean tt12-patch-librelane \
   gen-vectors-128a gen-vectors-128 \
   sim-128a sim-128 sim-aead-vectors-shared-prod-directout \
   synth synth-all synth-128a-minarea synth-128a-maxperf synth-128-minarea synth-128-maxperf \
@@ -231,8 +231,12 @@ tt12-write-user-config:
 # ── Harden ─────────────────────────────────────────────────────────────────────
 # Calls tt_tool.py --harden which drives the full LibreLane/OpenLane2 flow.
 # Requires: nix develop (for tkinter), make tt12-python-venv, PDK installed.
-tt12-harden: tt12-write-user-config
-	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --harden
+# Patch librelane to use tclsh instead of tkinter (safe no-op if already patched)
+tt12-patch-librelane:
+	python3 tools/patch_librelane_tcl.py
+
+tt12-harden: tt12-write-user-config tt12-patch-librelane
+	$(TT_ENV) $(PY) -m librelane --pdk-root $(PDK_ROOT) --pdk $(PDK) --run-dir runs/wokwi src/config.json
 
 # ── Post-harden inspection ─────────────────────────────────────────────────────
 tt12-print-warnings:
