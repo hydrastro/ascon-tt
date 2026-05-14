@@ -70,6 +70,22 @@ def main() -> int:
 
     merged = dict(cfg)
     merged.update(user_cfg)
+
+    # LibreLane 3.x synthesis uses the corner-indexed LIB map to select
+    # the Liberty file passed to Yosys dfflibmap. Keep this local copy so
+    # GF180 builds do not depend on tt_tool.py --create-user-config.
+    merged.setdefault('LIB', {
+        '*_tt_025C_3v30': [
+            'pdk_dir::libs.ref/gf180mcu_fd_sc_mcu7t5v0/lib/gf180mcu_fd_sc_mcu7t5v0__tt_025C_3v30.lib'
+        ],
+        '*_ss_125C_3v00': [
+            'pdk_dir::libs.ref/gf180mcu_fd_sc_mcu7t5v0/lib/gf180mcu_fd_sc_mcu7t5v0__ss_125C_3v00.lib'
+        ],
+        '*_ff_n40C_3v60': [
+            'pdk_dir::libs.ref/gf180mcu_fd_sc_mcu7t5v0/lib/gf180mcu_fd_sc_mcu7t5v0__ff_n40C_3v60.lib'
+        ],
+    })
+
     (SRC / 'user_config.json').write_text(json.dumps(user_cfg, indent=2) + '\n')
     (SRC / 'config_merged.json').write_text(json.dumps(merged, indent=2) + '\n')
     print('wrote src/user_config.json')
