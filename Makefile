@@ -231,33 +231,11 @@ tt12-python-reset:
 
 tt12-env-report:
 	@echo "python3=$$(command -v python3)"
-	@python3 - <<'PY'
-import sys, site, os
-print('host version:', sys.version)
-print('host site:', site.getsitepackages())
-try:
-    import _tkinter
-    print('host _tkinter:', _tkinter.TK_VERSION)
-except Exception as e:
-    print('host _tkinter ERROR:', repr(e))
-print('PDK_ROOT:', os.environ.get('PDK_ROOT'))
-print('PYTHONPATH:', os.environ.get('PYTHONPATH'))
-PY
-	@if [ -x $(PY) ]; then $(PY) - <<'PY'; else echo "venv: missing"; fi
-import sys, site
-print('venv version:', sys.version)
-print('venv site:', site.getsitepackages())
-try:
-    import _tkinter, tkinter
-    print('venv _tkinter:', _tkinter.TK_VERSION)
-except Exception as e:
-    print('venv _tkinter ERROR:', repr(e))
-try:
-    import rich, librelane
-    print('rich/librelane imports: OK')
-except Exception as e:
-    print('rich/librelane ERROR:', repr(e))
-PY
+	@python3 -c "import sys, site, os; print('host version:', sys.version); print('host site:', site.getsitepackages()); print('PDK_ROOT:', os.environ.get('PDK_ROOT')); print('PYTHONPATH:', os.environ.get('PYTHONPATH'))"
+	@python3 -c "import _tkinter; print('host _tkinter:', _tkinter.TK_VERSION)" || true
+	@if [ -x $(PY) ]; then $(PY) -c "import sys, site; print('venv version:', sys.version); print('venv site:', site.getsitepackages())"; else echo "venv: missing"; fi
+	@if [ -x $(PY) ]; then $(PY) -c "import _tkinter; print('venv _tkinter:', _tkinter.TK_VERSION)" || true; fi
+	@if [ -x $(PY) ]; then $(PY) -c "import rich, librelane; print('venv rich/librelane imports: OK')" || true; fi
 
 # ── Write user_config.json (bypasses broken tt_tool.py --create-user-config) ──
 # tt_tool.py --create-user-config fails because it runs yosys without -D defines.
