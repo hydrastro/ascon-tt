@@ -28,7 +28,8 @@ SIM_GEN := sim/generated
 TT_DIR  := tt
 VENV    := .venv
 PY      := $(VENV)/bin/python
-PDK_ROOT ?= $(CURDIR)/.ttsetup/pdk
+# Always use a writable worktree-local PDK cache. Do not inherit a Nix flake store path.
+PDK_ROOT := $(CURDIR)/.ttsetup/pdk
 PDK      ?= gf180mcuD
 LIBRELANE_TAG ?= 3.0.0
 
@@ -239,9 +240,11 @@ tt12-create-user-config: tt12-write-user-config
 
 # Canonical local harden path for GF26a; --no-docker is for NixOS/local LibreLane.
 tt12-harden: tt12-write-user-config
+	mkdir -p $(PDK_ROOT)
 	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --gf --no-docker --harden
 
 tt12-create-tt-submission:
+	mkdir -p $(PDK_ROOT)
 	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --gf --create-tt-submission
 
 # ── Post-harden inspection ─────────────────────────────────────────────────────

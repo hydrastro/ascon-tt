@@ -54,7 +54,6 @@
           coreutils findutils gnugrep gnused gnutar gzip jq
         ];
 
-        PDK_ROOT = "${toString ./.}/.ttsetup/pdk";
         PDK = "gf180mcuD";
         LIBRELANE_TAG = "3.0.0";
         LD_LIBRARY_PATH = lib.makeLibraryPath runtimeLibs;
@@ -62,6 +61,8 @@
 
         shellHook = ''
           export NIX_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+          export PDK_ROOT="$PWD/.ttsetup/pdk"
+          mkdir -p "$PDK_ROOT"
           export LIBRELANE_CONTAINER_ENGINE=""
           export LIBRELANE_DOCKERLESS=1
           echo "ascon-tt GF26a dev shell"
