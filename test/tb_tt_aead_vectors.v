@@ -2,7 +2,9 @@
 `default_nettype none
 
 module tb_tt_aead_vectors;
+
 `include "ascon_aead128_ad_vectors.vh"
+
   reg [7:0] ui_in;
   wire [7:0] uo_out;
   reg [7:0] uio_in;

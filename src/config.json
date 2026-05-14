@@ -1,17 +1,5 @@
 {
-  "//": "Tiny Tapeout LibreLane project configuration for ASCON AEAD.",
-  "CLOCK_PERIOD": 100.0,
-  "CLOCK_PORT": "clk",
-  "FP_DEF_TEMPLATE": "dir::../tt/tech/sky130A/def/tt_block_8x2_pg.def",
-  "FP_SIZING": "absolute",
-  "VERILOG_DEFINES": [
-    "USE_SHARED_AEAD=1",
-    "ASCON_VARIANT=1",
-    "ROUNDS_PER_CYCLE=1",
-    "ENABLE_OUT_BUFFER=0",
-    "ENABLE_DIAGNOSTICS=0",
-    "ENABLE_PERM_DEBUG=0"
-  ],
+  "//": "Tiny Tapeout LibreLane configuration for gf180mcuD.",
   "PL_TARGET_DENSITY_PCT": 60,
   "GRT_ALLOW_CONGESTION": 1,
   "PL_RESIZER_HOLD_SLACK_MARGIN": 0.1,

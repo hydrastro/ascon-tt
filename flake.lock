@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "ascon-c": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1769616063,
+        "narHash": "sha256-mxS1FZgESDBoZS3GvFaEj3XWfezEolFGX/rkxtThXto=",
+        "owner": "ascon",
+        "repo": "ascon-c",
+        "rev": "446347f21b209f3921c65ece70027c366cbe1693",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ascon",
+        "repo": "ascon-c",
+        "type": "github"
+      }
+    },
     "ascon-rtl": {
       "flake": false,
       "locked": {
@@ -18,11 +34,11 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1777954456,
-        "narHash": "sha256-hGdgeU2Nk87RAuZyYjyDjFL6LK7dAZN5RE9+hrDTkDU=",
+        "lastModified": 1778443072,
+        "narHash": "sha256-zi7/fsqM/kFdNuED//4WOCUtezGtKKqRNORjMvfwjnA=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "549bd84d6279f9852cae6225e372cc67fb91a4c1",
+        "rev": "da5ad661ba4e5ef59ba743f0d112cbc30e474f32",
         "type": "github"
       },
       "original": {
@@ -34,6 +50,7 @@
     },
     "root": {
       "inputs": {
+        "ascon-c": "ascon-c",
         "ascon-rtl": "ascon-rtl",
         "nixpkgs": "nixpkgs"
       }
