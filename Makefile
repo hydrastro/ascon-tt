@@ -77,7 +77,7 @@ TT_ENV := \
   synth synth-all synth-128a-minarea synth-128a-maxperf synth-128-minarea synth-128-maxperf \
   lint sanity \
   tt5-profiles tt5-report tt5-clean \
-  tt12-python-venv tt12-python-check tt12-python-reset \
+  tt12-python-venv tt12-python-check tt12-python-reset tt12-env-report \
   tt12-write-user-config tt12-harden \
   tt12-print-warnings tt12-print-stats tt12-create-png \
   tt12-pre-harden-check tt12-print-cell-category \
@@ -210,8 +210,8 @@ tt12-python-venv:
 	@test -f $(TT_DIR)/requirements.txt || \
 	  { echo "ERROR: tt/ submodule not checked out."; \
 	    echo "Run: git submodule update --init --recursive"; exit 1; }
-	python3 -c "import _tkinter, tkinter; print('host Python tkinter OK')"
-	python3 -m venv $(VENV)
+	python3 -c "import _tkinter, tkinter; print('host Python tkinter OK:', _tkinter.TK_VERSION)"
+	python3 -m venv --system-site-packages $(VENV)
 	$(PY) -m pip install --upgrade pip
 	$(PY) -m pip install -r $(TT_DIR)/requirements.txt
 	$(PY) -m pip install "librelane==$(LIBRELANE_TAG)" yowasp-yosys rich
@@ -219,14 +219,45 @@ tt12-python-venv:
 
 tt12-python-check:
 	@test -x $(PY) || { echo "ERROR: run 'make tt12-python-venv' first"; exit 1; }
-	$(PY) -c "import _tkinter, tkinter; print('venv tkinter OK')"
+	$(PY) -c "import _tkinter, tkinter; print('venv tkinter OK:', _tkinter.TK_VERSION)"
 	$(PY) -c "import chevron, yaml, git, librelane, rich, site; print('Python env OK; site=' + site.getsitepackages()[0])"
 	$(TT_ENV) command -v yowasp-yosys
 	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --help >/dev/null 2>&1
+	$(TT_ENV) $(PY) -m librelane --version >/dev/null
 	@echo "tt12-python-check OK"
 
 tt12-python-reset:
 	rm -rf $(VENV)
+
+tt12-env-report:
+	@echo "python3=$$(command -v python3)"
+	@python3 - <<'PY'
+import sys, site, os
+print('host version:', sys.version)
+print('host site:', site.getsitepackages())
+try:
+    import _tkinter
+    print('host _tkinter:', _tkinter.TK_VERSION)
+except Exception as e:
+    print('host _tkinter ERROR:', repr(e))
+print('PDK_ROOT:', os.environ.get('PDK_ROOT'))
+print('PYTHONPATH:', os.environ.get('PYTHONPATH'))
+PY
+	@if [ -x $(PY) ]; then $(PY) - <<'PY'; else echo "venv: missing"; fi
+import sys, site
+print('venv version:', sys.version)
+print('venv site:', site.getsitepackages())
+try:
+    import _tkinter, tkinter
+    print('venv _tkinter:', _tkinter.TK_VERSION)
+except Exception as e:
+    print('venv _tkinter ERROR:', repr(e))
+try:
+    import rich, librelane
+    print('rich/librelane imports: OK')
+except Exception as e:
+    print('rich/librelane ERROR:', repr(e))
+PY
 
 # ── Write user_config.json (bypasses broken tt_tool.py --create-user-config) ──
 # tt_tool.py --create-user-config fails because it runs yosys without -D defines.

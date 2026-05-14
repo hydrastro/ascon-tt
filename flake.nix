@@ -11,9 +11,18 @@
       pkgs = import nixpkgs { inherit system; };
       lib = pkgs.lib;
 
-      # Use the full CPython build so the _tkinter extension is present.
-      # LibreLane 3.x still evaluates some Tcl PDK config through tkinter.Tcl().
-      py = pkgs.python3Full.withPackages (ps: [ ps.rich ps.click ps.pip ps.virtualenv ps.setuptools ps.wheel ]);
+      # Current nixpkgs removed python3Full. Tkinter now lives in the Python
+      # package set. The venv is created with --system-site-packages so it can
+      # see this Nix-provided _tkinter extension.
+      py = pkgs.python3.withPackages (ps: [
+        ps.tkinter
+        ps.rich
+        ps.click
+        ps.pip
+        ps.virtualenv
+        ps.setuptools
+        ps.wheel
+      ]);
 
       runtimeLibs = with pkgs; [
         stdenv.cc.cc.lib
@@ -41,7 +50,7 @@
           tcl
           tk
 
-          # Python and build helpers.  py is python3Full.withPackages above;
+          # Python and build helpers. py is python3.withPackages above;
           # keep pip/virtualenv inside that same interpreter family.
           py
           ninja meson cmake pkg-config gcc
@@ -59,8 +68,19 @@
         shellHook = ''
           export NIX_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
           export PDK_ROOT="$PWD/.ttsetup/pdk"
-          # OpenROAD executes LibreLane odbpy scripts with embedded Python; expose the venv packages.
-          export PYTHONPATH="$PWD/.venv/lib/python3.13/site-packages:${PYTHONPATH:-}"
+          # OpenROAD executes LibreLane odbpy helpers with an embedded Python.
+          # Expose both the project venv and the Nix Python package set.
+          _pyver=$(python3 - <<'PYSITE'
+import sys
+print(f"python{sys.version_info.major}.{sys.version_info.minor}")
+PYSITE
+)
+          _nix_site=$(python3 - <<'PYSITE'
+import site
+print(site.getsitepackages()[0])
+PYSITE
+)
+          export PYTHONPATH="$PWD/.venv/lib/$_pyver/site-packages:$_nix_site:${PYTHONPATH:-}"
           mkdir -p "$PDK_ROOT"
           export LIBRELANE_CONTAINER_ENGINE=""
           export LIBRELANE_DOCKERLESS=1

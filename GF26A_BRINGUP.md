@@ -146,3 +146,12 @@ make tt12-python-reset
 make tt12-python-venv
 make tt12-python-check
 ```
+
+
+## NixOS / Python note
+
+On current nixpkgs, `python3Full` has been removed. Tkinter is supplied by
+`python3Packages.tkinter`, so the project venv must be created with
+`--system-site-packages` from the Nix shell. This is why `make tt12-python-venv`
+checks `_tkinter` before creating `.venv`. If the check fails, leave and re-enter
+`nix develop`, then run `make tt12-python-reset tt12-python-venv tt12-python-check`.
