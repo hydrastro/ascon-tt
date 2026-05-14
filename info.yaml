@@ -1,53 +1,47 @@
-# Tiny Tapeout project information
 project:
-  title: "ASCON AEAD Serial Accelerator"
-  author: "a b"
-  discord: ""
-  description: "Full Ascon-AEAD128 accelerator with a Tiny Tapeout serial byte protocol"
-  language: "Verilog"
-  clock_hz: 25000000
-  tiles: "2x2"
-  top_module: "tt_um_ascon_aead"
+  title: ASCON AEAD Serial Accelerator
+  author: a b
+  discord: ''
+  description: ASCON-128/128a AEAD accelerator with a Tiny Tapeout serial byte protocol
+  language: Verilog
+  clock_hz: 10000000
+  tiles: 4x4
+  top_module: tt_um_ascon_aead
   source_files:
-    - "project.v"
-    - "ascon_tt_serial_frontend.v"
-    - "ascon_tt_aead_core_stub.v"
-    - "ascon_tt_perm_core.v"
-    - "ascon_tt_aead_shared.v"
-    - "ascon_core/ascon_round_comb.v"
-    - "ascon_core/ascon_perm_unrolled.v"
-    - "ascon_core/ascon_aead128_enc_ad.v"
-    - "ascon_core/ascon_aead128_dec_ad.v"
-
-# The pinout of your project. Leave unused pins blank. DO NOT delete or add pins.
-# This section is for the Tiny Tapeout datasheet/website.
+  - project.v
+  - ascon_tt_serial_frontend.v
+  - ascon_tt_aead_core_stub.v
+  - ascon_tt_perm_core.v
+  - ascon_tt_aead_bridge.v
+  - ascon_tt_aead_bridge_dual.v
+  - ascon_tt_aead_shared.v
+  - ascon_core/ascon_round_comb.v
+  - ascon_core/ascon_perm_unrolled.v
+  - ascon_core/ascon_aead128_enc_ad.v
+  - ascon_core/ascon_aead128_dec_ad.v
 pinout:
-  ui[0]: "cmd_data[0]"
-  ui[1]: "cmd_data[1]"
-  ui[2]: "cmd_data[2]"
-  ui[3]: "cmd_data[3]"
-  ui[4]: "cmd_data[4]"
-  ui[5]: "cmd_data[5]"
-  ui[6]: "cmd_data[6]"
-  ui[7]: "cmd_data[7]"
-
-  uo[0]: "resp[0]"
-  uo[1]: "resp[1]"
-  uo[2]: "resp[2]"
-  uo[3]: "resp[3]"
-  uo[4]: "resp[4]"
-  uo[5]: "resp[5]"
-  uo[6]: "resp[6]"
-  uo[7]: "resp[7]"
-
-  uio[0]: "in_valid (input)"
-  uio[1]: "out_ready (input)"
-  uio[2]: "in_ready (output)"   # note: uio_oe drives [5:0] as outputs
-  uio[3]: "out_valid (output)"
-  uio[4]: "busy (output)"
-  uio[5]: "done (output)"
-  uio[6]: "auth_ok (output)"
-  uio[7]: "error (output)"
-
-# Do not change!
+  ui[0]: cmd_data[0]
+  ui[1]: cmd_data[1]
+  ui[2]: cmd_data[2]
+  ui[3]: cmd_data[3]
+  ui[4]: cmd_data[4]
+  ui[5]: cmd_data[5]
+  ui[6]: cmd_data[6]
+  ui[7]: cmd_data[7]
+  uo[0]: resp[0]
+  uo[1]: resp[1]
+  uo[2]: resp[2]
+  uo[3]: resp[3]
+  uo[4]: resp[4]
+  uo[5]: resp[5]
+  uo[6]: resp[6]
+  uo[7]: resp[7]
+  uio[0]: in_valid (input) / in_ready (output)
+  uio[1]: out_ready (input) / out_valid (output)
+  uio[2]: busy (output)
+  uio[3]: done (output)
+  uio[4]: auth_ok (output)
+  uio[5]: error (output)
+  uio[6]: reserved input
+  uio[7]: reserved input
 yaml_version: 6

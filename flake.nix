@@ -1,24 +1,18 @@
 {
-  description = "Tiny Tapeout ASCON AEAD project";
+  description = "ASCON AEAD128/128a Tiny Tapeout GF26a project";
 
   inputs = {
-    nixpkgs.url   = "github:NixOS/nixpkgs/nixos-unstable";
-    ascon-rtl.url = "github:hydrastro/ascon-rtl";
-    ascon-rtl.flake = false;
-    ascon-c.url   = "github:ascon/ascon-c";
-    ascon-c.flake = false;
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs, ascon-rtl, ascon-c }:
+  outputs = { self, nixpkgs }:
     let
       system = "x86_64-linux";
-      pkgs   = import nixpkgs { inherit system; };
-      lib    = pkgs.lib;
+      pkgs = import nixpkgs { inherit system; };
+      lib = pkgs.lib;
 
-      # python3.withPackages bakes _tkinter.so into the interpreter derivation.
-      # This is the only way to make tkinter importable inside a venv on NixOS,
-      # because venvs inherit the C-extension search path from their base Python.
-      # Adding py.pkgs.tkinter to `packages` alone does NOT work for venvs.
+      # Python with tkinter compiled in; this matters for LibreLane/tt tooling
+      # when a venv is created on NixOS.
       py = pkgs.python3.withPackages (ps: [ ps.tkinter ]);
 
       runtimeLibs = with pkgs; [
@@ -30,54 +24,53 @@
         libx11 libxext libxrender libxcb libxft
         libxi libxrandr libxcursor libxinerama libsm libice
       ];
-
     in {
       devShells.${system}.default = pkgs.mkShell {
         packages = with pkgs; [
-          # EDA tools — librelane uses these from PATH, no container needed
+          # RTL/sim/synthesis
           yosys
+          iverilog
+          verilator
+
+          # Physical-design/runtime tools used by LibreLane and TT helpers
           openroad
           klayout
           magic-vlsi
           netgen
-          verilator
-          iverilog
+          tcl
+          tk
 
-          # Python (with tkinter baked in — required by librelane PDK config parsing)
+          # Python and build helpers
           py
           py.pkgs.pip
           py.pkgs.virtualenv
           py.pkgs.setuptools
           py.pkgs.wheel
-
-          # Build tools for pip wheel compilation
           ninja meson cmake pkg-config gcc
 
-          # Version control + utilities
+          # Utilities
           git gnumake which
-          coreutils findutils gnugrep gnused gnutar gzip
+          coreutils findutils gnugrep gnused gnutar gzip jq
         ];
 
-        ASCON_RTL   = "${ascon-rtl}";
-        ASCON_C_DIR = "${ascon-c}";
+        PDK_ROOT = "${toString ./.}/.ttsetup/pdk";
+        PDK = "gf180mcuD";
+        LIBRELANE_TAG = "3.0.0";
         LD_LIBRARY_PATH = lib.makeLibraryPath runtimeLibs;
         QT_QPA_PLATFORM = "offscreen";
 
-        # Disable container engine — librelane uses PATH tools directly
-        LIBRELANE_CONTAINER_ENGINE = "";
-
         shellHook = ''
           export NIX_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-          echo "ascon-tt dev shell"
-          echo "  ASCON_RTL   = ${ascon-rtl}"
-          echo "  ASCON_C_DIR = ${ascon-c}"
+          export LIBRELANE_CONTAINER_ENGINE=""
+          export LIBRELANE_DOCKERLESS=1
+          echo "ascon-tt GF26a dev shell"
+          echo "  PDK=$PDK"
+          echo "  PDK_ROOT=$PDK_ROOT"
+          echo "  LIBRELANE_TAG=$LIBRELANE_TAG"
           echo
-          echo "First time setup:"
-          echo "  make tt12-python-venv"
-          echo
-          echo "To build:"
-          echo "  make gen-vectors sim-aead-vectors-prod-directout lint synth"
-          echo "  make tt12-harden"
+          echo "First time:  git submodule update --init --recursive && make tt12-python-venv"
+          echo "Check RTL:   make gen-vectors-128a sim-128a && make gen-vectors-128 sim-128"
+          echo "Harden:      make harden-128a-gf26a"
         '';
       };
     };
