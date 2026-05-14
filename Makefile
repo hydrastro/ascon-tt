@@ -236,7 +236,7 @@ tt12-patch-librelane:
 	python3 tools/patch_librelane_tcl.py
 
 tt12-harden: tt12-write-user-config tt12-patch-librelane
-	$(TT_ENV) $(PY) -m librelane --pdk-root $(PDK_ROOT) --pdk $(PDK) --run-dir runs/wokwi src/config.json
+	$(TT_ENV) $(PY) -m librelane --pdk-root $(PDK_ROOT) --pdk $(PDK) --force-run-dir runs/wokwi src/config.json
 
 # ── Post-harden inspection ─────────────────────────────────────────────────────
 tt12-print-warnings:

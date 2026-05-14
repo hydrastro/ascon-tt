@@ -31,5 +31,19 @@
   "RUN_CTS": 1,
   "DESIGN_REPAIR_BUFFER_OUTPUT_PORTS": 0,
   "MAGIC_DEF_LABELS": 0,
-  "MAGIC_WRITE_LEF_PINONLY": 1
+  "MAGIC_WRITE_LEF_PINONLY": 1,
+  "VERILOG_FILES": [
+    "project.v",
+    "ascon_tt_serial_frontend.v",
+    "ascon_tt_aead_core_stub.v",
+    "ascon_tt_perm_core.v",
+    "ascon_tt_aead_bridge.v",
+    "ascon_tt_aead_bridge_dual.v",
+    "ascon_tt_aead_shared.v",
+    "ascon_core/ascon_round_comb.v",
+    "ascon_core/ascon_perm_unrolled.v",
+    "ascon_core/ascon_aead128_enc_ad.v",
+    "ascon_core/ascon_aead128_dec_ad.v"
+  ],
+  "DESIGN_NAME": "tt_um_ascon_aead"
 }
