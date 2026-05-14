@@ -16,6 +16,8 @@
 
       runtimeLibs = with pkgs; [
         stdenv.cc.cc.lib
+        tcl
+        tk
 
         librelane
 
@@ -69,6 +71,7 @@
           py.pkgs.virtualenv
           py.pkgs.setuptools
           py.pkgs.wheel
+          py.pkgs.tkinter
 
           which
           coreutils

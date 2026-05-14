@@ -49,7 +49,7 @@ for tiles in $TILES_LIST; do
     echo "== TT-15 sweep tiles=$tiles clock_hz=$freq =="
     python3 tools/tt15_set_tt_config.py --tiles "$tiles" --clock-hz "$freq" | tee "$out/config_set.log"
 
-    make tt12-create-user-config > "$out/create_user_config.log" 2>&1 || true
+    make tt12-write-user-config > "$out/create_user_config.log" 2>&1 || true
 
     set +e
     make tt12-harden > "$out/harden.log" 2>&1
