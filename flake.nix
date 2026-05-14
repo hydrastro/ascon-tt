@@ -13,7 +13,7 @@
 
       # Python with tkinter compiled in; this matters for LibreLane/tt tooling
       # when a venv is created on NixOS.
-      py = pkgs.python3.withPackages (ps: [ ps.tkinter ]);
+      py = pkgs.python3.withPackages (ps: [ ps.tkinter ps.rich ps.click ]);
 
       runtimeLibs = with pkgs; [
         stdenv.cc.cc.lib
@@ -62,6 +62,8 @@
         shellHook = ''
           export NIX_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
           export PDK_ROOT="$PWD/.ttsetup/pdk"
+          # OpenROAD executes LibreLane odbpy scripts with embedded Python; expose the venv packages.
+          export PYTHONPATH="$PWD/.venv/lib/python3.13/site-packages:${PYTHONPATH:-}"
           mkdir -p "$PDK_ROOT"
           export LIBRELANE_CONTAINER_ENGINE=""
           export LIBRELANE_DOCKERLESS=1

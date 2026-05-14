@@ -127,3 +127,12 @@ Typical fixes:
 - Hold timing failure: increase hold slack margins in `src/config.json`.
 - Wrong template error: confirm `FP_DEF_TEMPLATE` ends with `_pgvdd.def`, not `_pg.def`.
 - Missing PDK: use the GitHub Action as source of truth, or install the GF180 PDK under `$PDK_ROOT` with the same version expected by Tiny Tapeout.
+
+### Nix/OpenROAD embedded Python note
+
+LibreLane's OpenDB helper scripts are executed through OpenROAD's embedded Python, not always through `.venv/bin/python`. The Makefile therefore exports `.venv` site-packages through `PYTHONPATH`, and the venv setup explicitly installs `rich`. If you see `ModuleNotFoundError: No module named 'rich'`, run:
+
+```sh
+.venv/bin/python -m pip install rich
+export PYTHONPATH="$PWD/.venv/lib/python3.13/site-packages:${PYTHONPATH:-}"
+```

@@ -28,6 +28,8 @@ SIM_GEN := sim/generated
 TT_DIR  := tt
 VENV    := .venv
 PY      := $(VENV)/bin/python
+# Site-packages path exported to OpenROAD embedded Python for LibreLane odbpy helpers.
+VENV_SITE ?= $(shell $(PY) -c 'import site; print(site.getsitepackages()[0])' 2>/dev/null || echo $(CURDIR)/$(VENV)/lib/python3.13/site-packages)
 # Always use a writable worktree-local PDK cache. Do not inherit a Nix flake store path.
 PDK_ROOT := $(CURDIR)/.ttsetup/pdk
 PDK      ?= gf180mcuD
@@ -63,6 +65,7 @@ TOP := tt_um_ascon_aead
 # LIBRELANE_DOCKERLESS=1 tells librelane to skip container detection.
 TT_ENV := \
   PATH=$(CURDIR)/$(VENV)/bin:$(PATH) \
+  PYTHONPATH=$(VENV_SITE):$(PYTHONPATH) \
   PDK_ROOT=$(PDK_ROOT) \
   PDK=$(PDK) \
   LIBRELANE_TAG=$(LIBRELANE_TAG) \
@@ -208,14 +211,14 @@ tt12-python-venv:
 	  { echo "ERROR: tt/ submodule not checked out."; \
 	    echo "Run: git submodule update --init --recursive"; exit 1; }
 	python3 -m venv $(VENV)
-	$(VENV)/bin/pip install --upgrade pip
-	$(VENV)/bin/pip install -r $(TT_DIR)/requirements.txt
-	$(VENV)/bin/pip install "librelane==$(LIBRELANE_TAG)" yowasp-yosys
+	$(PY) -m pip install --upgrade pip
+	$(PY) -m pip install -r $(TT_DIR)/requirements.txt
+	$(PY) -m pip install "librelane==$(LIBRELANE_TAG)" yowasp-yosys rich
 	@echo "Venv ready."
 
 tt12-python-check:
 	@test -x $(PY) || { echo "ERROR: run 'make tt12-python-venv' first"; exit 1; }
-	$(PY) -c "import chevron, yaml, git, librelane; print('Python env OK')"
+	$(PY) -c "import chevron, yaml, git, librelane, rich, site; print('Python env OK; site=' + site.getsitepackages()[0])"
 	$(TT_ENV) command -v yowasp-yosys
 	$(TT_ENV) $(PY) ./$(TT_DIR)/tt_tool.py --help >/dev/null 2>&1
 	@echo "tt12-python-check OK"
